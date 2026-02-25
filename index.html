@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Credit Risk Scoring v2 | PYMEs Industriales</title>
+<title>TokenOriginate | Credit Risk Scoring</title>
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
 <style>
 /* ── Reset & base ── */
@@ -242,25 +242,155 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; color: #
            justify-content: center; gap: .4rem; }
 .pdf-btn:hover { background: #1e293b; color: #c8dff0; }
 
+/* ── TokenOriginate branding ── */
+.sb-branding { display: flex; align-items: center; gap: .75rem; margin-bottom: 1.1rem; }
+.sb-logo-name { color: white; font-size: 1.05rem; font-weight: 800; letter-spacing: -.3px; line-height: 1.1; }
+.sb-logo-tag  { color: #2dd4bf; font-size: .62rem; font-weight: 700; text-transform: uppercase;
+                letter-spacing: .9px; margin-top: .1rem; }
+
+/* ── PDF Cover page ── */
+#pdf-cover {
+  display: none;
+  position: fixed; inset: 0; z-index: 9999;
+  background: linear-gradient(145deg, #060e1d 0%, #0c1f3f 45%, #0e2d54 100%);
+  flex-direction: column; align-items: center; justify-content: center;
+  font-family: 'Segoe UI', Arial, sans-serif; color: white;
+}
+.cover-grid-bg {
+  position: absolute; inset: 0; opacity: .04;
+  background-image: linear-gradient(#fff 1px, transparent 1px),
+                    linear-gradient(90deg, #fff 1px, transparent 1px);
+  background-size: 40px 40px;
+}
+.cover-accent-bar {
+  position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, #2dd4bf, #3b82f6, #f59e0b);
+}
+.cover-accent-bottom {
+  position: absolute; bottom: 0; left: 0; right: 0; height: 4px;
+  background: linear-gradient(90deg, #f59e0b, #3b82f6, #2dd4bf);
+}
+.cover-logo-wrap { display: flex; align-items: center; gap: 1.2rem; margin-bottom: 2.5rem; }
+.cover-company   { font-size: 2.8rem; font-weight: 900; letter-spacing: -1px; color: white; }
+.cover-tagline   { font-size: .9rem; font-weight: 600; color: #2dd4bf; text-transform: uppercase;
+                   letter-spacing: 2px; margin-top: .2rem; }
+.cover-divider   { width: 80px; height: 3px;
+                   background: linear-gradient(90deg, #3b82f6, #2dd4bf);
+                   border-radius: 2px; margin: 2rem 0; }
+.cover-report    { font-size: 1.55rem; font-weight: 800; color: white;
+                   text-align: center; letter-spacing: -.5px; }
+.cover-sub       { font-size: .95rem; color: #94a3b8; margin-top: .6rem; text-align: center; }
+.cover-meta      { display: flex; gap: 2.5rem; margin-top: 3rem; }
+.cover-meta-item { text-align: center; }
+.cover-meta-item .cm-label { font-size: .65rem; font-weight: 700; text-transform: uppercase;
+                              letter-spacing: 1px; color: #64748b; margin-bottom: .3rem; }
+.cover-meta-item .cm-value { font-size: .95rem; font-weight: 700; color: #e2e8f0; }
+.cover-footer-txt { position: absolute; bottom: 1.5rem; font-size: .72rem;
+                    color: #334155; text-align: center; letter-spacing: .5px; }
+
 /* ── Print ── */
 @media print {
+  #pdf-cover { display: flex !important; position: relative;
+               width: 100vw; height: 100vh; page-break-after: always; }
   #sidebar { display: none; }
-  body { overflow: auto; display: block; }
+  body { overflow: auto; display: block; background: white; }
   #main { overflow: visible; padding: 1rem; }
   .tabs { display: none; }
   .section { display: block !important; page-break-inside: avoid; margin-bottom: 2rem; }
   .section::before { content: attr(data-title); font-size: 1rem; font-weight: 800;
                      color: #0c2340; display: block; margin-bottom: .8rem;
                      border-bottom: 2px solid #0c2340; padding-bottom: .3rem; }
+  .print-header { display: flex !important; }
 }
 </style>
 </head>
 <body>
 
+<!-- ═══════════════════════════ PDF COVER ═══════════════════════════ -->
+<div id="pdf-cover">
+  <div class="cover-grid-bg"></div>
+  <div class="cover-accent-bar"></div>
+  <div class="cover-accent-bottom"></div>
+  <div class="cover-logo-wrap">
+    <!-- TokenOriginate Logo SVG -->
+    <svg width="72" height="72" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="cvGrad" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#1e40af"/>
+          <stop offset="50%" stop-color="#2563eb"/>
+          <stop offset="100%" stop-color="#0ea5e9"/>
+        </linearGradient>
+        <linearGradient id="cvGoldGrad" x1="0" y1="0" x2="72" y2="0" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#f59e0b"/>
+          <stop offset="100%" stop-color="#fbbf24"/>
+        </linearGradient>
+      </defs>
+      <rect width="72" height="72" rx="18" fill="url(#cvGrad)"/>
+      <!-- Outer diamond / token shape -->
+      <polygon points="36,10 62,36 36,62 10,36" fill="none" stroke="white" stroke-width="2" opacity="0.35"/>
+      <!-- Inner diamond -->
+      <polygon points="36,20 52,36 36,52 20,36" fill="none" stroke="white" stroke-width="1.5" opacity="0.18"/>
+      <!-- Originate arrow -->
+      <line x1="22" y1="36" x2="44" y2="36" stroke="url(#cvGoldGrad)" stroke-width="3.5" stroke-linecap="round"/>
+      <polyline points="38,28 46,36 38,44" fill="none" stroke="url(#cvGoldGrad)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Corner dots -->
+      <circle cx="36" cy="10" r="3" fill="#2dd4bf"/>
+      <circle cx="62" cy="36" r="3" fill="#2dd4bf"/>
+      <circle cx="36" cy="62" r="3" fill="#2dd4bf"/>
+      <circle cx="10" cy="36" r="3" fill="#2dd4bf"/>
+    </svg>
+    <div>
+      <div class="cover-company">TokenOriginate</div>
+      <div class="cover-tagline">Credit Risk Platform</div>
+    </div>
+  </div>
+  <div class="cover-divider"></div>
+  <div class="cover-report">Credit Risk Scoring Report</div>
+  <div class="cover-sub">PYMEs Industriales — Modelo v2.0 | Análisis de Riesgo Crediticio</div>
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <div class="cm-label">Fecha de análisis</div>
+      <div class="cm-value" id="cover-date">—</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cm-label">Plataforma</div>
+      <div class="cm-value">TokenOriginate v2.0</div>
+    </div>
+    <div class="cover-meta-item">
+      <div class="cm-label">Clasificación</div>
+      <div class="cm-value">Uso Interno</div>
+    </div>
+  </div>
+  <div class="cover-footer-txt">© TokenOriginate — Documento confidencial. Solo para uso interno y análisis orientativo. Prohibida su distribución sin autorización.</div>
+</div>
+
 <!-- ═══════════════════════════ SIDEBAR ═══════════════════════════ -->
 <div id="sidebar">
-  <div class="sb-logo">⬡ CreditRisk</div>
-  <div class="sb-sub">Scoring PYMEs Industriales v2</div>
+  <!-- TokenOriginate brand -->
+  <div class="sb-branding">
+    <svg width="38" height="38" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="sbGrad" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#1e40af"/><stop offset="100%" stop-color="#0ea5e9"/>
+        </linearGradient>
+        <linearGradient id="sbGold" x1="0" y1="0" x2="72" y2="0" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#f59e0b"/><stop offset="100%" stop-color="#fbbf24"/>
+        </linearGradient>
+      </defs>
+      <rect width="72" height="72" rx="18" fill="url(#sbGrad)"/>
+      <polygon points="36,10 62,36 36,62 10,36" fill="none" stroke="white" stroke-width="2" opacity="0.35"/>
+      <line x1="22" y1="36" x2="44" y2="36" stroke="url(#sbGold)" stroke-width="3.5" stroke-linecap="round"/>
+      <polyline points="38,28 46,36 38,44" fill="none" stroke="url(#sbGold)" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="36" cy="10" r="3" fill="#2dd4bf"/>
+      <circle cx="62" cy="36" r="3" fill="#2dd4bf"/>
+      <circle cx="36" cy="62" r="3" fill="#2dd4bf"/>
+      <circle cx="10" cy="36" r="3" fill="#2dd4bf"/>
+    </svg>
+    <div>
+      <div class="sb-logo-name">TokenOriginate</div>
+      <div class="sb-logo-tag">Credit Risk Platform</div>
+    </div>
+  </div>
 
   <!-- Example buttons -->
   <div class="sb-sec">Cargar ejemplo</div>
@@ -375,10 +505,31 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; color: #
 
 <!-- ═══════════════════════════ MAIN ═══════════════════════════ -->
 <div id="main">
+  <!-- Print-only header strip (appears on every page after cover) -->
+  <div class="print-header" style="display:none; justify-content:space-between; align-items:center;
+       border-bottom:2px solid #0c1f3f; padding-bottom:.6rem; margin-bottom:1.2rem;">
+    <div style="display:flex;align-items:center;gap:.6rem;">
+      <svg width="24" height="24" viewBox="0 0 72 72" fill="none">
+        <defs>
+          <linearGradient id="phGrad" x1="0" y1="0" x2="72" y2="72" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#1e40af"/><stop offset="100%" stop-color="#0ea5e9"/>
+          </linearGradient>
+        </defs>
+        <rect width="72" height="72" rx="18" fill="url(#phGrad)"/>
+        <polygon points="36,10 62,36 36,62 10,36" fill="none" stroke="white" stroke-width="2" opacity="0.4"/>
+        <line x1="22" y1="36" x2="44" y2="36" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round"/>
+        <polyline points="38,28 46,36 38,44" fill="none" stroke="#f59e0b" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span style="font-weight:800;font-size:.9rem;color:#0c1f3f;">TokenOriginate</span>
+      <span style="font-size:.75rem;color:#64748b;">Credit Risk Platform</span>
+    </div>
+    <span style="font-size:.72rem;color:#94a3b8;">Credit Risk Scoring Report — Uso interno</span>
+  </div>
+
   <div class="main-header">
     <div>
       <h1>Credit Risk Scoring</h1>
-      <p id="subtitle">PYMEs Industriales — Modelo v2.0 | Solo uso interno y análisis orientativo</p>
+      <p id="subtitle">TokenOriginate — PYMEs Industriales v2.0 | Solo uso interno y análisis orientativo</p>
     </div>
   </div>
 
@@ -1271,19 +1422,39 @@ function setText(id, html) {
 // PDF EXPORT
 // ═══════════════════════════════════════════════════════════════
 function exportPDF() {
-  // Show all sections temporarily for print
+  // Update cover date
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('es-ES', { day:'2-digit', month:'long', year:'numeric' });
+  const el = document.getElementById('cover-date');
+  if (el) el.textContent = dateStr;
+
+  // Show cover + all sections + print headers
+  const cover    = document.getElementById('pdf-cover');
   const sections = document.querySelectorAll('.section');
   const tabs     = document.querySelectorAll('.tab');
+  const pHeaders = document.querySelectorAll('.print-header');
+
+  cover.style.display    = 'flex';
+  cover.style.position   = 'relative';
+  cover.style.width      = '100vw';
+  cover.style.height     = '100vh';
   sections.forEach(s => s.style.display = 'block');
   tabs.forEach(t => t.style.display = 'none');
+  pHeaders.forEach(h => h.style.display = 'flex');
+
   window.print();
+
   // Restore after print dialog closes
   setTimeout(() => {
+    cover.style.display    = 'none';
+    cover.style.position   = '';
+    cover.style.width      = '';
+    cover.style.height     = '';
     sections.forEach(s => s.style.display = '');
     tabs.forEach(t => t.style.display = '');
-    // Re-apply active class visibility
+    pHeaders.forEach(h => h.style.display = 'none');
     document.querySelectorAll('.section.active').forEach(s => s.style.display = 'block');
-  }, 1000);
+  }, 1200);
 }
 
 // ── Init ──
