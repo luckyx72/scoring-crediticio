@@ -870,10 +870,11 @@ const SCORE_FNS = {
   // DSCR: Rojo<1.0x(0-19), Naranja 1.0-1.2x(20-49), Amarillo 1.2-1.5x(50-79), Verde>1.5x(80-100)
   dscr:          v => linScore(v, [[0,0],[1.0,19],[1.2,49],[1.5,80],[2.5,100]]),
   deuda_ebitda:  v => v < 0 ? 100 : linScore(v, [[0,100],[2.5,80],[4.0,40],[7.0,0]]),
-  // LLCR: Rojo<1.2x(0-39), Amarillo 1.2-1.4x(40-79), Verde>1.4x(80-100)
-  llcr:          v => linScore(v, [[0.5,0],[1.2,39],[1.4,80],[2.0,100]]),
+  // LLCR: Rojo<1.0x(0-19), Naranja 1.0-1.2x(20-49), Amarillo 1.2-1.4x(50-79), Verde>1.4x(80-100)
+  llcr:          v => linScore(v, [[0,0],[1.0,19],[1.2,49],[1.4,80],[2.0,100]]),
   ebitda_margin: v => linScore(v, [[-5,0],[0,10],[8,40],[15,80],[25,100]]),
-  ltv:           v => v === null ? 55 : linScore(v, [[0,100],[50,80],[70,40],[100,0]]),
+  // LTV: Verde<50%(80-100), Amarillo 50-60%(50-79), Naranja 60-70%(20-49), Rojo>70%(0-19)
+  ltv:           v => v === null ? 55 : linScore(v, [[0,100],[50,80],[60,50],[70,20],[100,0]]),
   ffo_dfn:       v => linScore(v, [[0,10],[15,40],[20,80],[35,100]]),
   dias_cobro:    v => linScore(v, [[0,100],[45,80],[90,40],[180,0]]),
   equipo:        v => ({1:0,2:25,3:50,4:75,5:100})[Math.round(v)] || 0,
@@ -924,10 +925,10 @@ function calcRatios(d) {
   const pvFactor = (1 - Math.pow(1 + rate, -n_loan)) / rate;
   const llcr     = loanBase > 0 ? (cfads * pvFactor) / loanBase : 99;
 
-  // LTV
+  // LTV — use loanBase (importe or DFN) so colateral always feeds into scoring
   let ltv = null;
-  if (d.colateral > 0 && d.importe > 0) {
-    ltv = (d.importe / d.colateral) * 100;
+  if (d.colateral > 0) {
+    ltv = (loanBase / d.colateral) * 100;
   }
 
   // FFO / DFN %
@@ -1532,7 +1533,12 @@ const EXAMPLES = {
     clientes:76, proveedores:473, vida_media:4,
     importe:0, plazo:5, tipo_int:6, colateral:0, tipo_col:'inmueble',
     equipo:'4', concentracion:'3', antiguedad:'5', ciclicidad:'2',
-    sector_comp:'metalurgia'
+    sector_comp:'metalurgia',
+    colRows: [
+      { tipo:'nave',          desc:'Naves industriales Amurrio/Llodio', bruto:180 },
+      { tipo:'maquinaria',    desc:'Líneas de producción tubos sin costura', bruto:95 },
+      { tipo:'cuentas_cobrar',desc:'Cartera clientes Oil & Gas', bruto:120 },
+    ]
   },
   aa: {
     ventas:200, ebitda:46, gastos_fin:3, imp_pagado:5, capex_mant:3,
@@ -1566,6 +1572,9 @@ function loadExample(name) {
     const el = document.getElementById(f);
     if (el) el.value = ex[f];
   });
+  // Load colateral inventory rows if defined
+  _colRows = (ex.colRows || []).map(r => ({ tipo: r.tipo, desc: r.desc, bruto: r.bruto }));
+  renderColTable();
   update();
 }
 
@@ -1743,7 +1752,7 @@ function recalcColateral() {
   const kpiCfg = [
     { label:'LTV',              val: ltv !== null ? ltv.toFixed(1)+'%' : 'N/A',
       sub:'Deuda / Colateral bruto',
-      cls: ltv === null ? 'rb' : ltv < 50 ? 'rv' : ltv <= 70 ? 'ra' : 'rr' },
+      cls: ltv === null ? 'rb' : ltv < 50 ? 'rv' : ltv < 60 ? 'ra' : ltv < 70 ? 'rn' : 'rr' },
     { label:'Recovery Rate',    val: recRate.toFixed(1)+'%',
       sub:'Valor neto PV / Deuda',
       cls: recRate >= 70 ? 'rv' : recRate >= 40 ? 'ra' : 'rr' },
