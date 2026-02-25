@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Credit Risk Scoring | PYMEs Industriales</title>
+<title>Credit Risk Scoring v2 | PYMEs Industriales</title>
 <script src="https://cdn.plot.ly/plotly-2.27.0.min.js" charset="utf-8"></script>
 <style>
 /* ── Reset & base ── */
@@ -13,7 +13,7 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; color: #
 
 /* ── Sidebar ── */
 #sidebar {
-  width: 290px; min-width: 290px; background: #0c2340;
+  width: 300px; min-width: 300px; background: #0c2340;
   height: 100vh; overflow-y: auto; padding: 1.4rem 1.2rem;
   display: flex; flex-direction: column; gap: 0; flex-shrink: 0;
 }
@@ -39,616 +39,1194 @@ body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4f8; color: #
 .field select option { background: #163456; color: white; }
 
 /* Example buttons */
-.ex-btns { display: flex; gap: .4rem; margin-bottom: .5rem; }
-.ex-btn  { flex: 1; background: #1e4976; color: #c8dff0; border: none; border-radius: 6px;
-           padding: .45rem .3rem; font-size: .78rem; font-weight: 700; cursor: pointer;
+.ex-btns { display: flex; gap: .4rem; margin-bottom: .5rem; flex-wrap: wrap; }
+.ex-btn  { flex: 1; min-width: 60px; background: #1e4976; color: #c8dff0; border: none; border-radius: 6px;
+           padding: .45rem .3rem; font-size: .75rem; font-weight: 700; cursor: pointer;
            transition: background .15s; }
 .ex-btn:hover { background: #2563ab; color: white; }
 
-/* Print button */
-.print-btn { width: 100%; margin-top: .8rem; background: transparent;
-             color: #5a8fb5; border: 1px solid #1e4976; border-radius: 6px;
-             padding: .5rem; font-size: .78rem; cursor: pointer; letter-spacing: .5px; }
-.print-btn:hover { background: #1e4976; color: #c8dff0; }
+/* Action buttons */
+.action-btn { width: 100%; margin-top: .5rem; background: #1d4ed8;
+              color: white; border: none; border-radius: 6px;
+              padding: .55rem; font-size: .85rem; font-weight: 700; cursor: pointer;
+              transition: background .15s; }
+.action-btn:hover { background: #1e40af; }
+.reset-btn  { width: 100%; margin-top: .4rem; background: transparent;
+              color: #5a8fb5; border: 1px solid #1e4976; border-radius: 6px;
+              padding: .45rem; font-size: .82rem; font-weight: 600; cursor: pointer;
+              transition: all .15s; }
+.reset-btn:hover { background: #1e4976; color: #c8dff0; }
 
-/* ── Main content ── */
-#main { flex: 1; overflow-y: auto; padding: 1.4rem 1.6rem; }
+/* ── Main ── */
+#main { flex: 1; overflow-y: auto; padding: 1.5rem 1.8rem; }
 #main::-webkit-scrollbar { width: 6px; }
-#main::-webkit-scrollbar-thumb { background: #cbd5e0; border-radius: 4px; }
+#main::-webkit-scrollbar-thumb { background: #c7d8eb; border-radius: 4px; }
 
-/* ── Header ── */
-.hdr {
-  background: linear-gradient(135deg, #0c2340 0%, #1a4a7a 55%, #1e6fa8 100%);
-  color: white; padding: 1.4rem 1.8rem; border-radius: 14px; margin-bottom: 1.1rem;
+.main-header { display: flex; justify-content: space-between; align-items: flex-start;
+               margin-bottom: 1.5rem; }
+.main-header h1 { font-size: 1.55rem; font-weight: 800; color: #0c2340; }
+.main-header p  { font-size: .82rem; color: #64748b; margin-top: .2rem; }
+
+/* ── Section tabs ── */
+.tabs { display: flex; gap: .5rem; margin-bottom: 1.4rem; flex-wrap: wrap; }
+.tab  { padding: .45rem 1.1rem; border-radius: 20px; font-size: .8rem; font-weight: 700;
+        cursor: pointer; border: 2px solid transparent; transition: all .2s; }
+.tab.active  { background: #1d4ed8; color: white; }
+.tab.inactive{ background: white; color: #475569; border-color: #e2e8f0; }
+.tab.inactive:hover { border-color: #1d4ed8; color: #1d4ed8; }
+
+.section { display: none; }
+.section.active { display: block; }
+
+/* ── Gating Banner ── */
+.gating-banner {
+  background: linear-gradient(135deg, #7f1d1d, #991b1b);
+  border-radius: 12px; padding: 1rem 1.4rem;
+  margin-bottom: 1.5rem; display: none;
+  animation: fadeIn .4s ease;
 }
-.hdr h1 { font-size: 1.6rem; font-weight: 800; }
-.hdr p  { opacity: .65; font-size: .88rem; margin-top: .2rem; }
+.gating-banner.visible { display: block; }
+.gating-banner .g-title { font-size: .75rem; font-weight: 800; text-transform: uppercase;
+                           letter-spacing: 1px; color: #fca5a5; margin-bottom: .4rem; }
+.gating-banner .g-text  { font-size: .95rem; font-weight: 700; color: white; line-height: 1.5; }
 
-/* ── Section title ── */
-.sec-t { font-size: .65rem; font-weight: 700; text-transform: uppercase;
-         letter-spacing: 1px; color: #64748b; margin: 1.2rem 0 .7rem;
-         padding-bottom: .35rem; border-bottom: 1px solid #e2e8f0; }
+/* ── KPI strip ── */
+.kpi-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px,1fr));
+             gap: 1rem; margin-bottom: 1.4rem; }
+.kpi { background: white; border-radius: 12px; padding: 1rem 1.1rem;
+       box-shadow: 0 1px 4px rgba(0,0,0,.07); }
+.kpi .k-label { font-size: .68rem; font-weight: 700; text-transform: uppercase;
+                letter-spacing: .6px; color: #64748b; margin-bottom: .3rem; }
+.kpi .k-value { font-size: 1.55rem; font-weight: 800; color: #0c2340; line-height: 1; }
+.kpi .k-sub   { font-size: .72rem; color: #94a3b8; margin-top: .2rem; }
 
-/* ── KPI & ratio cards ── */
-.card { background: white; border-radius: 12px; padding: 1.1rem 1.3rem;
-        box-shadow: 0 2px 10px rgba(0,0,0,.07); }
-.card-lbl { font-size: .63rem; font-weight: 700; text-transform: uppercase;
-            letter-spacing: 1px; color: #94a3b8; margin-bottom: .25rem; }
-.card-val { font-size: 1.85rem; font-weight: 800; color: #0f172a; line-height: 1.1; }
-.card-sub { font-size: .72rem; color: #94a3b8; margin-top: .2rem; }
+/* ── Score row ── */
+.score-row { display: grid; grid-template-columns: 260px 1fr; gap: 1.2rem;
+             margin-bottom: 1.4rem; }
+@media (max-width: 900px) { .score-row { grid-template-columns: 1fr; } }
 
-/* ── Rows ── */
-.row-2 { display: grid; grid-template-columns: 1.1fr .9fr; gap: 1rem; align-items: start; }
-.row-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: .8rem; }
-.row-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: .8rem; }
-.row-c { display: grid; grid-template-columns: 3fr 2fr; gap: 1rem; }
+/* ── Charts grid ── */
+.chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem;
+              margin-bottom: 1.4rem; }
+@media (max-width: 820px) { .chart-grid { grid-template-columns: 1fr; } }
 
-/* ── KPI column (3 stacked cards) ── */
-.kpi-col { display: flex; flex-direction: column; gap: .8rem; }
+.card { background: white; border-radius: 14px; padding: 1.2rem 1.4rem;
+        box-shadow: 0 1px 6px rgba(0,0,0,.07); }
+.card-title { font-size: .78rem; font-weight: 700; text-transform: uppercase;
+              letter-spacing: .6px; color: #64748b; margin-bottom: 1rem; }
 
-/* ── Risk factor cards ── */
-.rfc { background: white; border-radius: 10px; padding: .9rem 1.1rem;
-       box-shadow: 0 2px 8px rgba(0,0,0,.06); border-left: 5px solid #e2e8f0; }
-.rfc.bajo     { border-left-color: #4ade80; }
-.rfc.moderado { border-left-color: #fbbf24; }
-.rfc.elevado  { border-left-color: #fb923c; }
-.rfc.critico  { border-left-color: #f87171; }
-.rfc-top  { display: flex; justify-content: space-between; align-items: flex-start; }
-.rfc-name { font-weight: 700; font-size: .92rem; }
-.rfc-rank { font-size: 1.4rem; font-weight: 800; color: #e2e8f0; }
-.rfc-det  { font-size: .78rem; color: #64748b; margin: .35rem 0 .25rem; }
-.badge    { display: inline-block; padding: 2px 10px; border-radius: 10px;
-            font-size: .68rem; font-weight: 700; color: white; }
-
-/* ── Semaforo badges ── */
-.badge-v { background:#dcfce7; color:#166534; padding:.28rem .9rem; border-radius:20px;
-           font-weight:700; font-size:.85rem; display:inline-block; }
-.badge-a { background:#fef9c3; color:#854d0e; padding:.28rem .9rem; border-radius:20px;
-           font-weight:700; font-size:.85rem; display:inline-block; }
-.badge-r { background:#fee2e2; color:#7f1d1d; padding:.28rem .9rem; border-radius:20px;
-           font-weight:700; font-size:.85rem; display:inline-block; }
+/* ── Ratio tiles ── */
+.ratio-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr));
+              gap: .8rem; margin-bottom: 1.4rem; }
+.ratio-tile { background: white; border-radius: 10px; padding: .85rem 1rem;
+              box-shadow: 0 1px 4px rgba(0,0,0,.07); border-top: 3px solid #e2e8f0;
+              transition: transform .15s; }
+.ratio-tile:hover { transform: translateY(-2px); }
+.ratio-tile.verde   { border-top-color: #22c55e; }
+.ratio-tile.amarillo{ border-top-color: #f59e0b; }
+.ratio-tile.rojo    { border-top-color: #ef4444; }
+.rt-label { font-size: .65rem; font-weight: 700; text-transform: uppercase;
+            letter-spacing: .5px; color: #64748b; }
+.rt-value { font-size: 1.4rem; font-weight: 800; color: #0c2340; margin: .2rem 0; }
+.rt-sub   { font-size: .7rem; color: #94a3b8; }
+.rt-score { font-size: .72rem; font-weight: 700; margin-top: .35rem;
+            padding: .15rem .45rem; border-radius: 20px; display: inline-block; }
+.verde    .rt-score { background: #dcfce7; color: #15803d; }
+.amarillo .rt-score { background: #fef3c7; color: #92400e; }
+.rojo     .rt-score { background: #fee2e2; color: #991b1b; }
+.gating-badge { font-size: .6rem; font-weight: 800; text-transform: uppercase;
+                background: #fbbf24; color: #78350f; padding: .1rem .35rem;
+                border-radius: 4px; margin-left: .3rem; vertical-align: middle; }
 
 /* ── Recommendation banner ── */
-.rec { padding: 1.6rem 2rem; border-radius: 14px; text-align: center;
-       color: white; margin-top: .4rem; }
-.rec h2 { font-size: 1.7rem; font-weight: 800; }
-.rec p  { opacity: .85; font-size: .9rem; margin-top: .4rem; max-width: 650px; margin-left: auto; margin-right: auto; }
-.rec.op { background: linear-gradient(135deg, #064e3b, #059669); }
-.rec.an { background: linear-gradient(135deg, #78350f, #d97706); }
-.rec.re { background: linear-gradient(135deg, #7f1d1d, #dc2626); }
+.rec-banner { border-radius: 14px; padding: 1.3rem 1.6rem; margin-bottom: 1.4rem;
+              display: flex; align-items: flex-start; gap: 1.2rem; }
+.rec-banner.verde    { background: linear-gradient(135deg, #dcfce7, #bbf7d0); border-left: 5px solid #22c55e; }
+.rec-banner.amarillo { background: linear-gradient(135deg, #fef3c7, #fde68a); border-left: 5px solid #f59e0b; }
+.rec-banner.rojo     { background: linear-gradient(135deg, #fee2e2, #fecaca); border-left: 5px solid #ef4444; }
+.rec-icon { font-size: 2.5rem; line-height: 1; }
+.rec-body .rec-label { font-size: .72rem; font-weight: 700; text-transform: uppercase;
+                        letter-spacing: .7px; color: #475569; margin-bottom: .25rem; }
+.rec-body .rec-decision { font-size: 1.5rem; font-weight: 900; margin-bottom: .3rem; }
+.verde .rec-decision    { color: #15803d; }
+.amarillo .rec-decision { color: #92400e; }
+.rojo .rec-decision     { color: #991b1b; }
+.rec-body .rec-text { font-size: .9rem; color: #374151; line-height: 1.6; }
 
-/* ── Chart containers ── */
-.chart-box { background: white; border-radius: 12px; padding: .8rem;
-             box-shadow: 0 2px 10px rgba(0,0,0,.07); }
+/* ── Risk factors ── */
+.risk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr));
+             gap: 1rem; margin-bottom: 1.4rem; }
+.risk-card { background: white; border-radius: 12px; padding: 1rem 1.2rem;
+             box-shadow: 0 1px 4px rgba(0,0,0,.07); border-left: 4px solid #ef4444; }
+.risk-card .r-rank  { font-size: .65rem; font-weight: 800; text-transform: uppercase;
+                       color: #ef4444; letter-spacing: .5px; }
+.risk-card .r-name  { font-size: .92rem; font-weight: 700; color: #0c2340; margin: .2rem 0; }
+.risk-card .r-value { font-size: .8rem; color: #64748b; }
+.risk-card .r-impact{ font-size: .78rem; font-weight: 700; color: #dc2626; margin-top: .3rem; }
 
-/* ── Footer ── */
-.footer { text-align: center; margin-top: 1.5rem; padding-bottom: 1rem;
-          color: #94a3b8; font-size: .72rem; }
+/* ── Nueva Deuda section ── */
+.nueva-deuda-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-bottom: 1.4rem; }
+@media (max-width: 820px) { .nueva-deuda-grid { grid-template-columns: 1fr; } }
 
-/* ── Ratio mini-cards ── */
-.ratio-card { background: white; border-radius: 10px; padding: .9rem 1rem;
-              box-shadow: 0 2px 8px rgba(0,0,0,.06); text-align: center; }
-.ratio-lbl  { font-size: .63rem; font-weight: 700; text-transform: uppercase;
-              letter-spacing: .8px; color: #94a3b8; margin-bottom: .2rem; }
-.ratio-val  { font-size: 1.55rem; font-weight: 800; color: #0f172a; line-height: 1.1; }
-.ratio-pts  { font-size: .7rem; color: #94a3b8; margin-top: .25rem; }
+.nd-result { background: white; border-radius: 14px; padding: 1.2rem 1.4rem;
+             box-shadow: 0 1px 6px rgba(0,0,0,.07); }
+.nd-row { display: flex; justify-content: space-between; align-items: center;
+          padding: .5rem 0; border-bottom: 1px solid #f1f5f9; }
+.nd-row:last-child { border-bottom: none; }
+.nd-lbl { font-size: .8rem; color: #64748b; }
+.nd-val { font-size: .9rem; font-weight: 700; color: #0c2340; }
+.nd-status { padding: .2rem .7rem; border-radius: 20px; font-size: .78rem; font-weight: 700; }
+.nd-ok   { background: #dcfce7; color: #15803d; }
+.nd-warn { background: #fef3c7; color: #92400e; }
+.nd-bad  { background: #fee2e2; color: #991b1b; }
+
+/* ── Sector comparables ── */
+.sect-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.sect-table th { background: #f8fafc; font-size: .68rem; font-weight: 700;
+                 text-transform: uppercase; letter-spacing: .5px; color: #64748b;
+                 padding: .6rem .8rem; text-align: left; }
+.sect-table td { padding: .55rem .8rem; border-bottom: 1px solid #f1f5f9; }
+.sect-table tr:last-child td { border-bottom: none; }
+.sect-table tr.company-row td { background: #eff6ff; font-weight: 700; color: #1d4ed8; }
+.pos-p25  { color: #15803d; font-weight: 700; }
+.pos-med  { color: #92400e; font-weight: 700; }
+.pos-p75  { color: #991b1b; font-weight: 700; }
+.pos-good { color: #15803d; }
+.pos-mid  { color: #92400e; }
+.pos-bad  { color: #991b1b; }
+
+/* ── Covenants ── */
+.cov-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr));
+            gap: .9rem; margin-bottom: 1.2rem; }
+.cov-card { background: white; border-radius: 12px; padding: 1rem 1.2rem;
+            box-shadow: 0 1px 4px rgba(0,0,0,.07); border-left: 4px solid #1d4ed8; }
+.cov-name  { font-size: .68rem; font-weight: 700; text-transform: uppercase;
+             letter-spacing: .5px; color: #64748b; margin-bottom: .4rem; }
+.cov-value { font-size: 1.25rem; font-weight: 800; color: #0c2340; }
+.cov-desc  { font-size: .75rem; color: #94a3b8; margin-top: .3rem; }
+
+.pricing-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px,1fr));
+                gap: .9rem; margin-bottom: 1rem; }
+.pricing-card { background: #f8fafc; border-radius: 10px; padding: .8rem 1rem;
+                border: 1px solid #e2e8f0; text-align: center; }
+.pricing-card.active-price { background: #eff6ff; border-color: #3b82f6; }
+.pc-tranche { font-size: .68rem; font-weight: 700; text-transform: uppercase;
+              letter-spacing: .5px; color: #64748b; margin-bottom: .3rem; }
+.pc-spread  { font-size: 1.2rem; font-weight: 800; color: #1d4ed8; }
+.pc-note    { font-size: .72rem; color: #94a3b8; margin-top: .2rem; }
 
 /* ── Detail table ── */
-details { background: white; border-radius: 12px; padding: .9rem 1.2rem;
-          box-shadow: 0 2px 8px rgba(0,0,0,.05); margin-top: 1rem; }
-summary { cursor: pointer; font-size: .72rem; font-weight: 700; text-transform: uppercase;
-          letter-spacing: .8px; color: #64748b; }
-.det-table { width: 100%; border-collapse: collapse; margin-top: .8rem; font-size: .84rem; }
-.det-table th { text-align: left; font-size: .65rem; font-weight: 700; text-transform: uppercase;
-                letter-spacing: .6px; color: #94a3b8; padding: .3rem .4rem; border-bottom: 2px solid #f1f5f9; }
-.det-table td { padding: .45rem .4rem; border-bottom: 1px solid #f8fafc; }
-.det-total { font-weight: 700; background: #f8fafc; }
+.det-table { width: 100%; border-collapse: collapse; font-size: .83rem; }
+.det-table th { background: #f8fafc; font-size: .68rem; font-weight: 700;
+                text-transform: uppercase; letter-spacing: .5px; color: #64748b;
+                padding: .65rem .9rem; text-align: left; }
+.det-table td { padding: .6rem .9rem; border-bottom: 1px solid #f1f5f9; }
+.det-table tr:last-child td { border-bottom: none; }
+.badge-v { background: #dcfce7; color: #15803d; padding: .15rem .5rem;
+           border-radius: 20px; font-size: .72rem; font-weight: 700; }
+.badge-a { background: #fef3c7; color: #92400e; padding: .15rem .5rem;
+           border-radius: 20px; font-size: .72rem; font-weight: 700; }
+.badge-r { background: #fee2e2; color: #991b1b; padding: .15rem .5rem;
+           border-radius: 20px; font-size: .72rem; font-weight: 700; }
+.badge-g { background: #fbbf24; color: #78350f; padding: .15rem .5rem;
+           border-radius: 20px; font-size: .72rem; font-weight: 700; }
 
-/* ── Print styles ── */
+/* ── Animations ── */
+@keyframes fadeIn { from { opacity:0; transform: translateY(-8px); } to { opacity:1; transform:none; } }
+
+/* ── Print ── */
 @media print {
-  body { overflow: visible; }
   #sidebar { display: none; }
-  #main { overflow: visible; }
-  .ex-btns, .print-btn { display: none; }
-  .chart-box, .card, .rfc { box-shadow: none; border: 1px solid #e2e8f0; }
+  body { overflow: auto; }
+  #main { overflow: visible; padding: 0; }
 }
 </style>
 </head>
 <body>
 
-<!-- ══════════════════ SIDEBAR ══════════════════ -->
-<aside id="sidebar">
-  <div class="sb-logo">Scoring Crediticio</div>
-  <div class="sb-sub">PYMEs Industriales</div>
-  <hr class="sb-sep">
+<!-- ═══════════════════════════ SIDEBAR ═══════════════════════════ -->
+<div id="sidebar">
+  <div class="sb-logo">⬡ CreditRisk</div>
+  <div class="sb-sub">Scoring PYMEs Industriales v2</div>
 
+  <!-- Example buttons -->
   <div class="sb-sec">Cargar ejemplo</div>
   <div class="ex-btns">
     <button class="ex-btn" onclick="loadExample('tubacex')">Tubacex</button>
-    <button class="ex-btn" onclick="loadExample('aa')">AA</button>
-    <button class="ex-btn" onclick="loadExample('c')">C</button>
+    <button class="ex-btn" onclick="loadExample('aa')">Perfil AA</button>
+    <button class="ex-btn" onclick="loadExample('c')">Perfil C</button>
   </div>
-
   <hr class="sb-sep">
-  <div class="sb-sec">Identificacion</div>
-  <div class="field"><label>Empresa</label><input id="empresa" type="text" value="Mi PYME Industrial" oninput="update()"></div>
-  <div class="field"><label>Sector</label><input id="sector" type="text" value="Sector industrial" oninput="update()"></div>
 
-  <hr class="sb-sep">
+  <!-- P&L -->
   <div class="sb-sec">Cuenta de Resultados (M€)</div>
-  <div class="field"><label>Ventas netas</label><input id="ventas" type="number" step="0.5" value="20" oninput="update()"></div>
-  <div class="field"><label>EBIT (Resultado explotacion)</label><input id="ebit" type="number" step="0.1" value="2.0" oninput="update()"></div>
-  <div class="field"><label>Amortizacion y deterioros</label><input id="amort" type="number" step="0.1" value="1.0" oninput="update()"></div>
-  <div class="field"><label>Gastos financieros</label><input id="gastos_fin" type="number" step="0.1" value="0.8" oninput="update()"></div>
-  <div class="field"><label>Impuesto pagado (caja)</label><input id="imp_pagado" type="number" step="0.05" value="0.3" oninput="update()"></div>
+  <div class="field"><label>Ventas netas</label><input type="number" id="ventas" step="0.1" value="100"></div>
+  <div class="field"><label>EBITDA reportado</label><input type="number" id="ebitda" step="0.1" value="15"></div>
+  <div class="field"><label>Gastos financieros</label><input type="number" id="gastos_fin" step="0.1" value="2.5"></div>
+  <div class="field"><label>Impuesto pagado (caja)</label><input type="number" id="imp_pagado" step="0.1" value="2"></div>
+  <div class="field"><label>Capex mantenimiento</label><input type="number" id="capex_mant" step="0.1" value="2"></div>
 
   <hr class="sb-sep">
+  <!-- Balance -->
   <div class="sb-sec">Balance (M€)</div>
-  <div class="field"><label>Activo corriente</label><input id="activo_corr" type="number" step="0.5" value="12.0" oninput="update()"></div>
-  <div class="field"><label>Pasivo corriente</label><input id="pasivo_corr" type="number" step="0.5" value="9.0" oninput="update()"></div>
-  <div class="field"><label>Clientes (deudores comerciales)</label><input id="clientes" type="number" step="0.1" value="3.5" oninput="update()"></div>
-  <div class="field"><label>Proveedores comerciales</label><input id="proveedores" type="number" step="0.1" value="3.0" oninput="update()"></div>
-  <div class="field"><label>Aprovisionamientos (PyG)</label><input id="aprovision" type="number" step="0.5" value="13.0" oninput="update()"></div>
-  <div class="field"><label>Deuda financiera bruta</label><input id="deuda_fin_bruta" type="number" step="0.5" value="8.0" oninput="update()"></div>
-  <div class="field"><label>Efectivo + activos liquidos</label><input id="efectivo" type="number" step="0.1" value="2.0" oninput="update()"></div>
+  <div class="field"><label>Deuda financiera bruta</label><input type="number" id="deuda_bruta" step="0.1" value="35"></div>
+  <div class="field"><label>Caja y equiv.</label><input type="number" id="caja" step="0.1" value="8"></div>
+  <div class="field"><label>Activo corriente</label><input type="number" id="activo_corriente" step="0.1" value="45"></div>
+  <div class="field"><label>Pasivo corriente</label><input type="number" id="pasivo_corriente" step="0.1" value="28"></div>
+  <div class="field"><label>Clientes (cobrar)</label><input type="number" id="clientes" step="0.1" value="22"></div>
+  <div class="field"><label>Proveedores (pagar)</label><input type="number" id="proveedores" step="0.1" value="18"></div>
+  <div class="field"><label>Vida media deuda (años)</label><input type="number" id="vida_media" step="0.5" value="5"></div>
 
   <hr class="sb-sep">
-  <div class="sb-sec">Servicio de Deuda</div>
-  <div class="field"><label>Deuda bancaria total</label><input id="deuda_bancaria" type="number" step="0.5" value="8.0" oninput="update()"></div>
-  <div class="field"><label>Vida media deuda (anos)</label><input id="vida_media" type="number" step="0.5" value="5.0" oninput="update()"></div>
+  <!-- Operación nueva -->
+  <div class="sb-sec">Operación Nueva (opcional)</div>
+  <div class="field"><label>Importe solicitado (M€)</label><input type="number" id="importe" step="0.1" value="0"></div>
+  <div class="field"><label>Plazo (años)</label><input type="number" id="plazo" step="1" value="5"></div>
+  <div class="field"><label>Tipo interés (%)</label><input type="number" id="tipo_int" step="0.1" value="6"></div>
+  <div class="field"><label>Valor colateral (M€)</label><input type="number" id="colateral" step="0.1" value="0"></div>
+  <div class="field">
+    <label>Tipo colateral</label>
+    <select id="tipo_col">
+      <option value="inmueble">Inmueble (LTV max 60%)</option>
+      <option value="maquinaria">Maquinaria (LTV max 40%)</option>
+      <option value="cuentas_cobrar">Cuentas a cobrar (LTV max 70%)</option>
+      <option value="ninguno">Sin colateral</option>
+    </select>
+  </div>
 
   <hr class="sb-sep">
-  <div class="sb-sec">Factores Cualitativos (1=peor, 5=mejor)</div>
-  <div class="field"><label>Equipo directivo</label>
-    <select id="equipo" onchange="update()">
-      <option value="1">1 — Muy deficiente</option>
-      <option value="2">2 — Deficiente</option>
-      <option value="3" selected>3 — Adecuado</option>
-      <option value="4">4 — Bueno</option>
-      <option value="5">5 — Excelente</option>
-    </select></div>
-  <div class="field"><label>Concentracion de clientes</label>
-    <select id="concentracion" onchange="update()">
-      <option value="1">1 — Muy concentrado</option>
-      <option value="2">2 — Concentrado</option>
-      <option value="3" selected>3 — Mixto</option>
-      <option value="4">4 — Diversificado</option>
-      <option value="5">5 — Muy diversificado</option>
-    </select></div>
-  <div class="field"><label>Antiguedad del negocio</label>
-    <select id="antiguedad" onchange="update()">
-      <option value="1">1 — Startup (&lt;3 anos)</option>
-      <option value="2">2 — Joven (3-7 anos)</option>
-      <option value="3" selected>3 — Establecida (7-15)</option>
-      <option value="4">4 — Consolidada (15-30)</option>
-      <option value="5">5 — Muy consolidada (&gt;30)</option>
-    </select></div>
-  <div class="field"><label>Ciclicidad del sector</label>
-    <select id="ciclicidad" onchange="update()">
-      <option value="1">1 — Muy ciclico</option>
-      <option value="2">2 — Ciclico</option>
-      <option value="3" selected>3 — Moderado</option>
-      <option value="4">4 — Estable</option>
-      <option value="5">5 — Muy estable</option>
-    </select></div>
+  <!-- Cualitativos -->
+  <div class="sb-sec">Factores Cualitativos (1–5)</div>
+  <div class="field">
+    <label>Equipo directivo</label>
+    <select id="equipo">
+      <option value="3">3 – Competente</option>
+      <option value="1">1 – Deficiente</option>
+      <option value="2">2 – Limitado</option>
+      <option value="4">4 – Sólido</option>
+      <option value="5">5 – Excelente</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Diversif. clientes</label>
+    <select id="concentracion">
+      <option value="3">3 – Media (top-3 ~50%)</option>
+      <option value="1">1 – Muy alta (top-1 > 60%)</option>
+      <option value="2">2 – Alta (top-3 > 70%)</option>
+      <option value="4">4 – Baja (top-3 < 40%)</option>
+      <option value="5">5 – Muy baja (top-3 < 20%)</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Antigüedad negocio</label>
+    <select id="antiguedad">
+      <option value="3">3 – 10–20 años</option>
+      <option value="1">1 – < 3 años</option>
+      <option value="2">2 – 3–10 años</option>
+      <option value="4">4 – 20–30 años</option>
+      <option value="5">5 – > 30 años</option>
+    </select>
+  </div>
+  <div class="field">
+    <label>Estabilidad sector</label>
+    <select id="ciclicidad">
+      <option value="3">3 – Moderada</option>
+      <option value="1">1 – Muy cíclico</option>
+      <option value="2">2 – Cíclico</option>
+      <option value="4">4 – Estable</option>
+      <option value="5">5 – Muy defensivo</option>
+    </select>
+  </div>
 
   <hr class="sb-sep">
-  <button class="print-btn" onclick="window.print()">Imprimir / Exportar PDF</button>
-  <div style="text-align:center;color:#2a5580;font-size:.65rem;margin-top:.6rem" id="sb-date"></div>
-</aside>
-
-<!-- ══════════════════ MAIN ══════════════════ -->
-<main id="main">
-  <div id="header"></div>
-
-  <div class="row-2" style="margin-top:0">
-    <div class="chart-box"><div id="gauge" style="height:320px"></div></div>
-    <div class="kpi-col" id="kpi-col"></div>
+  <!-- Sector comparables -->
+  <div class="sb-sec">Sector para comparables</div>
+  <div class="field">
+    <select id="sector_comp">
+      <option value="metalurgia">Metalurgia / Fab. metal</option>
+      <option value="quimica">Química / Plásticos</option>
+      <option value="alimentacion">Alimentación / Bebidas</option>
+      <option value="automocion">Automoción / Componentes</option>
+      <option value="papel_carton">Papel / Cartón</option>
+      <option value="construccion">Construcción industrial</option>
+      <option value="energia">Energía / Renovables</option>
+      <option value="logistica">Logística / Transporte</option>
+    </select>
   </div>
 
-  <div class="sec-t">Ratios Calculados Automaticamente</div>
-  <div id="ratio-cards"></div>
+  <hr class="sb-sep">
+  <button class="action-btn" onclick="update()">Calcular scoring</button>
+  <button class="reset-btn" onclick="resetForm()">Nueva valoración</button>
+</div>
 
-  <div class="sec-t">Desglose del Scoring</div>
-  <div class="row-c">
-    <div class="chart-box"><div id="bar-chart" style="height:370px"></div></div>
-    <div class="chart-box"><div id="radar-chart" style="height:370px"></div></div>
+<!-- ═══════════════════════════ MAIN ═══════════════════════════ -->
+<div id="main">
+  <div class="main-header">
+    <div>
+      <h1>Credit Risk Scoring</h1>
+      <p id="subtitle">PYMEs Industriales — Modelo v2.0 | Solo uso interno y análisis orientativo</p>
+    </div>
   </div>
 
-  <div class="sec-t">Principales Factores de Riesgo</div>
-  <div class="row-3" id="risk-cards"></div>
-
-  <div class="sec-t">Recomendacion Final</div>
-  <div id="rec-banner"></div>
-
-  <details>
-    <summary>Ver tabla completa de metricas</summary>
-    <div id="detail-table"></div>
-  </details>
-
-  <div class="footer">
-    Scoring de Riesgo Crediticio — PYMEs Industriales &nbsp;·&nbsp;
-    Solo para uso interno y analisis orientativo &nbsp;·&nbsp;
-    Los ratios se calculan automaticamente a partir de los datos introducidos
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active"   onclick="switchTab('scoring')">Scoring</div>
+    <div class="tab inactive" onclick="switchTab('nueva_deuda')">Nueva Deuda</div>
+    <div class="tab inactive" onclick="switchTab('comparables')">Comparables</div>
+    <div class="tab inactive" onclick="switchTab('covenants')">Covenants</div>
+    <div class="tab inactive" onclick="switchTab('detalle')">Detalle</div>
   </div>
-</main>
+
+  <!-- ── TAB: SCORING ── -->
+  <div id="tab-scoring" class="section active">
+
+    <!-- Gating banner -->
+    <div id="gating-banner" class="gating-banner">
+      <div class="g-title">⛔ GATING METRIC — RECHAZO AUTOMÁTICO</div>
+      <div id="gating-text" class="g-text"></div>
+    </div>
+
+    <!-- KPI strip -->
+    <div class="kpi-strip">
+      <div class="kpi">
+        <div class="k-label">EBITDA</div>
+        <div class="k-value" id="kpi-ebitda">—</div>
+        <div class="k-sub">M€ reportado</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">Margen EBITDA</div>
+        <div class="k-value" id="kpi-margin">—</div>
+        <div class="k-sub">% sobre ventas</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">DFN</div>
+        <div class="k-value" id="kpi-dfn">—</div>
+        <div class="k-sub">M€ deuda neta</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">DFN / EBITDA</div>
+        <div class="k-value" id="kpi-le">—</div>
+        <div class="k-sub">x apalancamiento</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">DSCR</div>
+        <div class="k-value" id="kpi-dscr">—</div>
+        <div class="k-sub">x cobertura deuda</div>
+      </div>
+      <div class="kpi">
+        <div class="k-label">LLCR</div>
+        <div class="k-value" id="kpi-llcr">—</div>
+        <div class="k-sub">x loan life coverage</div>
+      </div>
+    </div>
+
+    <!-- Score row: gauge + bar -->
+    <div class="score-row">
+      <div class="card">
+        <div class="card-title">Score Global</div>
+        <div id="gauge-chart" style="height:210px;"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Contribución por Métrica</div>
+        <div id="bar-chart" style="height:210px;"></div>
+      </div>
+    </div>
+
+    <!-- Recommendation banner -->
+    <div id="rec-banner" class="rec-banner verde">
+      <div class="rec-icon" id="rec-icon">—</div>
+      <div class="rec-body">
+        <div class="rec-label">Decisión de crédito</div>
+        <div class="rec-decision" id="rec-decision">—</div>
+        <div class="rec-text" id="rec-text">—</div>
+      </div>
+    </div>
+
+    <!-- Ratio tiles -->
+    <div class="ratio-grid" id="ratio-grid"></div>
+
+    <!-- Radar chart -->
+    <div class="card" style="margin-bottom:1.4rem;">
+      <div class="card-title">Perfil de Riesgo — Radar</div>
+      <div id="radar-chart" style="height:300px;"></div>
+    </div>
+
+    <!-- Top risk factors -->
+    <div class="card-title" style="margin-bottom:.8rem;">Top 3 Factores de Riesgo</div>
+    <div class="risk-grid" id="risk-grid"></div>
+
+  </div><!-- /tab-scoring -->
+
+  <!-- ── TAB: NUEVA DEUDA ── -->
+  <div id="tab-nueva_deuda" class="section">
+    <div class="nueva-deuda-grid">
+      <div class="nd-result card">
+        <div class="card-title">Análisis de Servicio de Deuda Nueva</div>
+        <div id="nd-content">
+          <p style="color:#94a3b8;font-size:.85rem;">Introduzca importe, plazo y tipo de interés en el panel lateral para ver el análisis.</p>
+        </div>
+      </div>
+      <div class="nd-result card">
+        <div class="card-title">Capacidad de Endeudamiento</div>
+        <div id="nd-capacity"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Análisis LTV Colateral</div>
+      <div id="nd-ltv"></div>
+    </div>
+  </div>
+
+  <!-- ── TAB: COMPARABLES ── -->
+  <div id="tab-comparables" class="section">
+    <div class="card" style="margin-bottom:1.2rem;">
+      <div class="card-title">Comparables Sectoriales — <span id="sect-name">—</span></div>
+      <div style="overflow-x:auto;">
+        <table class="sect-table" id="sect-table">
+          <thead><tr>
+            <th>Métrica</th>
+            <th>P25 Sector</th>
+            <th>Mediana Sector</th>
+            <th>P75 Sector</th>
+            <th>Esta empresa</th>
+            <th>Posición</th>
+          </tr></thead>
+          <tbody id="sect-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Posicionamiento Sectorial</div>
+      <div id="sect-chart" style="height:280px;"></div>
+    </div>
+  </div>
+
+  <!-- ── TAB: COVENANTS ── -->
+  <div id="tab-covenants" class="section">
+    <div style="margin-bottom:1.2rem;">
+      <div class="card-title" style="margin-bottom:.8rem;">Covenants Financieros Sugeridos</div>
+      <div class="cov-grid" id="cov-grid"></div>
+    </div>
+    <div class="card" style="margin-bottom:1.2rem;">
+      <div class="card-title">Pricing por Tramo (Spread sobre Euribor)</div>
+      <div class="pricing-grid" id="pricing-grid"></div>
+      <p id="pricing-note" style="font-size:.78rem;color:#94a3b8;margin-top:.8rem;"></p>
+    </div>
+    <div class="card">
+      <div class="card-title">Condiciones Adicionales Recomendadas</div>
+      <div id="cov-extra"></div>
+    </div>
+  </div>
+
+  <!-- ── TAB: DETALLE ── -->
+  <div id="tab-detalle" class="section">
+    <div class="card">
+      <div class="card-title">Detalle Completo del Scoring</div>
+      <div style="overflow-x:auto;">
+        <table class="det-table">
+          <thead><tr>
+            <th>Métrica</th><th>Valor</th><th>Puntuación (0–100)</th><th>Peso</th><th>Contribución</th><th>Semáforo</th>
+          </tr></thead>
+          <tbody id="det-tbody"></tbody>
+          <tfoot>
+            <tr style="font-weight:800;background:#f8fafc;">
+              <td colspan="3">Score Total</td>
+              <td>100%</td>
+              <td id="det-total">—</td>
+              <td id="det-semaforo">—</td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /main -->
 
 <script>
-/* ══════════════════════════════════════════════════════════════════
-   CONFIGURACION Y SCORING
-══════════════════════════════════════════════════════════════════ */
+// ═══════════════════════════════════════════════════════════════
+// SCORING MODEL v2
+// ═══════════════════════════════════════════════════════════════
+
 const PESOS = {
-  ebitda_margin: { peso: 15, nombre: 'Margen EBITDA'       },
-  deuda_ebitda:  { peso: 20, nombre: 'Deuda Neta / EBITDA' },
-  dscr:          { peso: 20, nombre: 'DSCR'                },
-  liquidez:      { peso: 10, nombre: 'Ratio de Liquidez'   },
-  dias_cobro:    { peso:  5, nombre: 'Dias de Cobro'       },
-  dias_pago:     { peso:  5, nombre: 'Dias de Pago'        },
-  equipo:        { peso: 10, nombre: 'Equipo Directivo'    },
-  concentracion: { peso:  7, nombre: 'Diversif. Clientes'  },
-  antiguedad:    { peso:  5, nombre: 'Antiguedad Negocio'  },
-  ciclicidad:    { peso:  3, nombre: 'Estabilidad Sector'  },
+  dscr:          { peso: 25.0, nombre: 'DSCR',             gating: true  },
+  deuda_ebitda:  { peso: 20.0, nombre: 'DFN / EBITDA',     gating: true  },
+  llcr:          { peso: 15.0, nombre: 'LLCR',             gating: false },
+  ebitda_margin: { peso: 10.0, nombre: 'Margen EBITDA',    gating: false },
+  ltv:           { peso: 10.0, nombre: 'LTV Colateral',    gating: false },
+  ffo_dfn:       { peso: 10.0, nombre: 'FFO / DFN',        gating: false },
+  dias_cobro:    { peso:  5.0, nombre: 'Días de Cobro',    gating: false },
+  equipo:        { peso:  1.25,nombre: 'Equipo Directivo', gating: false },
+  concentracion: { peso:  1.25,nombre: 'Diversif. Clientes',gating: false },
+  antiguedad:    { peso:  1.25,nombre: 'Antigüedad Negocio',gating: false },
+  ciclicidad:    { peso:  1.25,nombre: 'Estabilidad Sector',gating: false },
 };
 
-const scoreFns = {
-  ebitda_margin: v => v>=20?100:v>=15?80:v>=10?60:v>=5?40:v>=0?20:0,
-  deuda_ebitda:  v => v<0?100:v<1?95:v<2?80:v<3?60:v<4?40:v<5?20:0,
-  dscr:          v => v>=2?100:v>=1.5?80:v>=1.25?60:v>=1?40:v>=.8?20:0,
-  liquidez:      v => v>=2?100:v>=1.5?80:v>=1.2?60:v>=1?40:v>=.8?20:0,
-  dias_cobro:    v => v<30?100:v<45?80:v<60?60:v<90?40:v<120?20:0,
-  dias_pago:     v => (v>=30&&v<=60)?100:(v>60&&v<=90)?70:(v>=15&&v<30)?60:(v>90&&v<=120)?40:v<15?30:10,
-  equipo:        v => ({1:0,2:25,3:50,4:75,5:100})[Math.round(v)]||0,
-  concentracion: v => ({1:0,2:25,3:50,4:75,5:100})[Math.round(v)]||0,
-  antiguedad:    v => ({1:0,2:25,3:50,4:75,5:100})[Math.round(v)]||0,
-  ciclicidad:    v => ({1:0,2:25,3:50,4:75,5:100})[Math.round(v)]||0,
+// Linear interpolation between breakpoints [[v0,p0],[v1,p1],...]
+function linScore(v, pts) {
+  if (v <= pts[0][0]) return pts[0][1];
+  if (v >= pts[pts.length-1][0]) return pts[pts.length-1][1];
+  for (let i = 0; i < pts.length-1; i++) {
+    const [v0,p0] = pts[i], [v1,p1] = pts[i+1];
+    if (v >= v0 && v <= v1) return Math.round(p0 + (p1-p0)*(v-v0)/(v1-v0));
+  }
+  return 0;
+}
+
+const SCORE_FNS = {
+  dscr:          v => linScore(v, [[0,0],[1.0,40],[1.5,80],[2.5,100]]),
+  deuda_ebitda:  v => v < 0 ? 100 : linScore(v, [[0,100],[2.5,80],[4.0,40],[7.0,0]]),
+  llcr:          v => linScore(v, [[0.5,0],[1.2,40],[1.4,80],[2.0,100]]),
+  ebitda_margin: v => linScore(v, [[-5,0],[0,10],[8,40],[15,80],[25,100]]),
+  ltv:           v => v === null ? 55 : linScore(v, [[0,100],[50,80],[70,40],[100,0]]),
+  ffo_dfn:       v => linScore(v, [[0,10],[15,40],[20,80],[35,100]]),
+  dias_cobro:    v => linScore(v, [[0,100],[45,80],[90,40],[180,0]]),
+  equipo:        v => ({1:0,2:25,3:50,4:75,5:100})[Math.round(v)] || 0,
+  concentracion: v => ({1:0,2:25,3:50,4:75,5:100})[Math.round(v)] || 0,
+  antiguedad:    v => ({1:0,2:25,3:50,4:75,5:100})[Math.round(v)] || 0,
+  ciclicidad:    v => ({1:0,2:25,3:50,4:75,5:100})[Math.round(v)] || 0,
 };
 
+// Sector benchmarks: {metric: {p25, med, p75}}
+// metrics: em=EBITDA margin%, dn=DFN/EBITDA, ds=DSCR, dc=Días cobro
+const SECT = {
+  metalurgia:   { n:'Metalurgia / Fab. metal',    em:{p25:7,  med:11, p75:16}, dn:{p25:1.5,med:2.8,p75:4.2}, ds:{p25:1.0,med:1.4,p75:1.9}, dc:{p25:45, med:65, p75:90 } },
+  quimica:      { n:'Química / Plásticos',         em:{p25:9,  med:14, p75:20}, dn:{p25:1.2,med:2.3,p75:3.8}, ds:{p25:1.1,med:1.5,p75:2.1}, dc:{p25:40, med:58, p75:80 } },
+  alimentacion: { n:'Alimentación / Bebidas',      em:{p25:8,  med:12, p75:18}, dn:{p25:1.0,med:2.0,p75:3.5}, ds:{p25:1.2,med:1.6,p75:2.3}, dc:{p25:30, med:45, p75:65 } },
+  automocion:   { n:'Automoción / Componentes',    em:{p25:6,  med:10, p75:15}, dn:{p25:1.8,med:3.0,p75:4.5}, ds:{p25:0.9,med:1.3,p75:1.8}, dc:{p25:50, med:72, p75:100} },
+  papel_carton: { n:'Papel / Cartón',              em:{p25:10, med:15, p75:21}, dn:{p25:1.3,med:2.5,p75:4.0}, ds:{p25:1.1,med:1.5,p75:2.0}, dc:{p25:35, med:55, p75:75 } },
+  construccion: { n:'Construcción industrial',     em:{p25:5,  med:9,  p75:14}, dn:{p25:2.0,med:3.2,p75:5.0}, ds:{p25:0.8,med:1.2,p75:1.7}, dc:{p25:60, med:85, p75:120} },
+  energia:      { n:'Energía / Renovables',        em:{p25:30, med:45, p75:60}, dn:{p25:3.0,med:4.5,p75:6.5}, ds:{p25:1.3,med:1.7,p75:2.2}, dc:{p25:25, med:40, p75:60 } },
+  logistica:    { n:'Logística / Transporte',      em:{p25:6,  med:10, p75:15}, dn:{p25:1.5,med:2.7,p75:4.2}, ds:{p25:1.0,med:1.4,p75:1.9}, dc:{p25:30, med:50, p75:70 } },
+};
+
+// ═══════════════════════════════════════════════════════════════
+// RATIO CALCULATION
+// ═══════════════════════════════════════════════════════════════
 function calcRatios(d) {
-  const ebitda  = d.ebit + d.amort;
-  const ventas  = Math.max(d.ventas, 0.001);
-  const dfn     = d.deuda_fin_bruta - d.efectivo;
-  const ab      = d.deuda_bancaria / Math.max(d.vida_media, 1);
+  const ebitda   = d.ebitda;
+  const ventas   = Math.max(d.ventas, 0.001);
+  const dfn      = d.deuda_bruta - d.caja;
+  const ebitda_margin = ebitda / ventas * 100;
+  const deuda_ebitda  = ebitda > 0 ? dfn / ebitda : (dfn <= 0 ? -1 : 99);
+  const dias_cobro    = d.clientes / ventas * 365;
+  const dias_pago     = d.proveedores / ventas * 365;
+  const liquidez      = d.pasivo_corriente > 0 ? d.activo_corriente / d.pasivo_corriente : 99;
+
+  // CFADS = EBITDA - impuestos pagados - capex mantenimiento
+  const cfads = ebitda - d.imp_pagado - (d.capex_mant || 0);
+
+  // Debt service = gastos financieros + amortización (DFN / vida_media)
+  const vida_media = Math.max(d.vida_media || 5, 0.5);
+  const amort      = Math.max(dfn, 0) / vida_media;
+  const debt_svc   = d.gastos_fin + amort;
+  const dscr       = debt_svc > 0 ? cfads / debt_svc : (cfads > 0 ? 99 : 0);
+
+  // LLCR: PV of CFADS over loan life / loan balance
+  const loanBase = d.importe > 0 ? d.importe : Math.max(dfn, 0.001);
+  const rate     = Math.max((d.tipo_int || 6) / 100, 0.0001);
+  const n_loan   = d.importe > 0 ? Math.max(d.plazo || 5, 1) : Math.max(vida_media, 1);
+  const pvFactor = (1 - Math.pow(1 + rate, -n_loan)) / rate;
+  const llcr     = loanBase > 0 ? (cfads * pvFactor) / loanBase : 99;
+
+  // LTV
+  let ltv = null;
+  const ltvMax = { inmueble: 60, maquinaria: 40, cuentas_cobrar: 70, ninguno: null };
+  if (d.colateral > 0 && d.importe > 0) {
+    ltv = (d.importe / d.colateral) * 100;
+  }
+
+  // FFO / DFN %
+  const ffo     = ebitda - d.gastos_fin - d.imp_pagado;
+  const ffo_dfn = dfn > 0 ? (ffo / dfn * 100) : (ffo > 0 ? 100 : 10);
+
   return {
-    ebitda,
-    ebitda_margin: ebitda / ventas * 100,
-    dfn,
-    deuda_ebitda:  dfn / Math.max(ebitda, 0.001),
-    dscr:          (ebitda - d.imp_pagado) / Math.max(d.gastos_fin + ab, 0.001),
-    liquidez:      d.activo_corr / Math.max(d.pasivo_corr, 0.001),
-    dias_cobro:    d.clientes / ventas * 365,
-    dias_pago:     d.proveedores / Math.max(d.aprovision, 0.001) * 365,
-    equipo:        d.equipo,
-    concentracion: d.concentracion,
-    antiguedad:    d.antiguedad,
-    ciclicidad:    d.ciclicidad,
+    ebitda, ventas, dfn, ebitda_margin, deuda_ebitda,
+    dias_cobro, dias_pago, liquidez, cfads, debt_svc,
+    dscr, llcr, ltv, ffo, ffo_dfn, amort, vida_media, loanBase, n_loan, rate,
+    tipo_col: d.tipo_col, ltvMax, colateral: d.colateral,
+    importe: d.importe, plazo: d.plazo, tipo_int: d.tipo_int,
+    gastos_fin: d.gastos_fin
   };
 }
 
-function calcScoring(r) {
-  let total = 0;
+function calcScores(r) {
   const res = {};
-  for (const [k, cfg] of Object.entries(PESOS)) {
-    const pts   = scoreFns[k](r[k]);
-    const aport = pts * cfg.peso / 100;
-    res[k] = { ...cfg, puntuacion: pts, aportacion: aport, perdida: (100 - pts) * cfg.peso / 100 };
-    total += aport;
+  for (const [key, cfg] of Object.entries(PESOS)) {
+    const val = r[key] !== undefined ? r[key] : null;
+    const sc  = SCORE_FNS[key](val);
+    const contrib = sc * cfg.peso / 100;
+    const color   = sc >= 70 ? 'verde' : sc >= 40 ? 'amarillo' : 'rojo';
+    res[key] = { valor: val, puntuacion: sc, peso: cfg.peso, contrib, color,
+                 nombre: cfg.nombre, gating: cfg.gating };
   }
-  return { res, total: Math.round(total * 10) / 10 };
+  return res;
 }
 
-function nivel(pts) {
-  if (pts >= 80) return { lbl: 'BAJO',     color: '#4ade80', cls: 'bajo'     };
-  if (pts >= 60) return { lbl: 'MODERADO', color: '#fbbf24', cls: 'moderado' };
-  if (pts >= 40) return { lbl: 'ELEVADO',  color: '#fb923c', cls: 'elevado'  };
-  return            { lbl: 'CRITICO',  color: '#f87171', cls: 'critico'  };
+function totalScore(res) {
+  return Object.values(res).reduce((s, v) => s + v.contrib, 0);
 }
 
-function semInfo(s) {
-  if (s >= 70) return { txt:'VERDE',    lbl:'RIESGO BAJO',  badge:'badge-v',
-    color:'#059669', fill:'rgba(5,150,105,.18)',  rec:'OPERAR',       cls:'op',
-    desc:'El perfil de riesgo es aceptable. Se puede proceder con la operacion con seguimiento periodico del apalancamiento y el DSCR.' };
-  if (s >= 40) return { txt:'AMARILLO', lbl:'RIESGO MEDIO', badge:'badge-a',
-    color:'#d97706', fill:'rgba(217,119,6,.18)',   rec:'ANALIZAR MAS', cls:'an',
-    desc:'El perfil presenta debilidades relevantes. Valorar garantias adicionales, covenants financieros o reducir el importe de la exposicion.' };
-  return           { txt:'ROJO',     lbl:'RIESGO ALTO',  badge:'badge-r',
-    color:'#dc2626', fill:'rgba(220,38,38,.18)',    rec:'RECHAZAR',     cls:'re',
-    desc:'El perfil supera los umbrales de riesgo aceptables. Las metricas no cumplen los requisitos minimos para esta operacion.' };
+function checkGating(res) {
+  const dscrFails = res.dscr.puntuacion < 40;
+  const dfnFails  = res.deuda_ebitda.puntuacion < 40;
+  if (dscrFails && dfnFails) return 'DSCR < 1.0x y DFN/EBITDA > 4.0x simultáneamente: doble incumplimiento de métricas de exclusión. Operación rechazada automáticamente independientemente del score total.';
+  if (dscrFails) return 'DSCR < 1.0x: el CFADS no cubre el servicio de la deuda. Umbral mínimo absoluto incumplido. Operación rechazada automáticamente.';
+  if (dfnFails)  return 'DFN/EBITDA > 4.0x: nivel de apalancamiento fuera del umbral de mercado para deuda senior. Operación rechazada automáticamente.';
+  return null;
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   EJEMPLOS PREDEFINIDOS
-══════════════════════════════════════════════════════════════════ */
-const EJEMPLOS = {
-  tubacex: { empresa:'Tubacex, S.A.', sector:'Fabricacion de tubos industriales',
-    ventas:767.5, ebit:63.5, amort:43.5, gastos_fin:37.5, imp_pagado:3.1,
-    activo_corr:773.2, pasivo_corr:606.6, clientes:76.6, proveedores:189.6,
-    aprovision:308.2, deuda_fin_bruta:491.4, efectivo:236.4,
-    deuda_bancaria:289.4, vida_media:6,
-    equipo:4, concentracion:3, antiguedad:5, ciclicidad:2 },
-  aa: { empresa:'PYME Modelo — Perfil AA', sector:'Metalurgia de precision',
-    ventas:45, ebit:8.5, amort:1.5, gastos_fin:1.2, imp_pagado:1.8,
-    activo_corr:22, pasivo_corr:11, clientes:3.4, proveedores:3.3,
-    aprovision:26.8, deuda_fin_bruta:9, efectivo:4.5,
-    deuda_bancaria:9, vida_media:7,
-    equipo:5, concentracion:4, antiguedad:5, ciclicidad:4 },
-  c: { empresa:'PYME Modelo — Perfil C', sector:'Fundicion de aluminio',
-    ventas:18, ebit:0.4, amort:0.7, gastos_fin:1.8, imp_pagado:0.1,
-    activo_corr:9, pasivo_corr:10.6, clientes:5.4, proveedores:4.5,
-    aprovision:12.6, deuda_fin_bruta:16.5, efectivo:1.4,
-    deuda_bancaria:14, vida_media:5,
-    equipo:2, concentracion:1, antiguedad:2, ciclicidad:1 },
+// ═══════════════════════════════════════════════════════════════
+// NUEVA DEUDA ANALYSIS
+// ═══════════════════════════════════════════════════════════════
+function calcNuevaDeuda(d, r) {
+  if (d.importe <= 0) return null;
+  const rate   = Math.max(d.tipo_int / 100, 0.0001);
+  const n      = Math.max(d.plazo, 1);
+  const newDS  = r.importe * rate + r.importe / n;           // simplified DS
+  const combDS = r.debt_svc + newDS;
+  const combDSCR = combDS > 0 ? r.cfads / combDS : 99;
+  const fits     = combDSCR >= 1.25;
+
+  // Max financeable at 1.25x DSCR
+  const headroom  = r.cfads / 1.25 - r.debt_svc;
+  const maxNew    = headroom > 0 ? Math.max(headroom / (rate + 1/n), 0) : 0;
+
+  // LTV check
+  const ltvMaxMap = { inmueble: 60, maquinaria: 40, cuentas_cobrar: 70, ninguno: null };
+  const ltvMaxPct = ltvMaxMap[d.tipo_col];
+  const ltvOk     = r.ltv !== null && ltvMaxPct !== null ? r.ltv <= ltvMaxPct : true;
+
+  return { newDS, combDSCR, fits, maxNew, ltvOk, ltvMaxPct };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// READ INPUTS
+// ═══════════════════════════════════════════════════════════════
+function readInputs() {
+  const g = id => parseFloat(document.getElementById(id).value) || 0;
+  const gs = id => document.getElementById(id).value;
+  return {
+    ventas: g('ventas'), ebitda: g('ebitda'), gastos_fin: g('gastos_fin'),
+    imp_pagado: g('imp_pagado'), capex_mant: g('capex_mant'),
+    deuda_bruta: g('deuda_bruta'), caja: g('caja'),
+    activo_corriente: g('activo_corriente'), pasivo_corriente: g('pasivo_corriente'),
+    clientes: g('clientes'), proveedores: g('proveedores'), vida_media: g('vida_media'),
+    importe: g('importe'), plazo: g('plazo'), tipo_int: g('tipo_int'),
+    colateral: g('colateral'), tipo_col: gs('tipo_col'),
+    equipo: parseInt(gs('equipo')), concentracion: parseInt(gs('concentracion')),
+    antiguedad: parseInt(gs('antiguedad')), ciclicidad: parseInt(gs('ciclicidad')),
+    sector_comp: gs('sector_comp'),
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════
+let _currentData = null;
+
+function update() {
+  const d = readInputs();
+  const r = calcRatios(d);
+
+  // Attach qualitative to ratios object for scoring
+  r.equipo = d.equipo; r.concentracion = d.concentracion;
+  r.antiguedad = d.antiguedad; r.ciclicidad = d.ciclicidad;
+
+  const res   = calcScores(r);
+  const score = Math.round(totalScore(res));
+  const gate  = checkGating(res);
+  const nd    = calcNuevaDeuda(d, r);
+
+  _currentData = { d, r, res, score, gate, nd };
+
+  renderScoring(d, r, res, score, gate);
+  renderNuevaDeuda(d, r, nd);
+  renderComparables(d, r);
+  renderCovenants(r, res, score);
+  renderDetalle(res, score);
+}
+
+// ── SCORING TAB ──
+function renderScoring(d, r, res, score, gate) {
+  // KPIs
+  setText('kpi-ebitda',  r.ebitda.toFixed(1) + ' M€');
+  setText('kpi-margin',  r.ebitda_margin.toFixed(1) + '%');
+  setText('kpi-dfn',     r.dfn.toFixed(1) + ' M€');
+  setText('kpi-le',      (r.deuda_ebitda < 0 ? 'Caja neta' : r.deuda_ebitda.toFixed(2) + 'x'));
+  setText('kpi-dscr',    r.dscr.toFixed(2) + 'x');
+  setText('kpi-llcr',    r.llcr.toFixed(2) + 'x');
+
+  // Gating banner
+  const banner = document.getElementById('gating-banner');
+  if (gate) {
+    banner.classList.add('visible');
+    setText('gating-text', gate);
+  } else {
+    banner.classList.remove('visible');
+  }
+
+  // Gauge
+  const color = gate ? '#ef4444' : score >= 70 ? '#22c55e' : score >= 40 ? '#f59e0b' : '#ef4444';
+  Plotly.react('gauge-chart', [{
+    type: 'indicator', mode: 'gauge+number',
+    value: score,
+    gauge: {
+      axis: { range:[0,100], tickfont:{size:10} },
+      bar:  { color },
+      steps: [
+        { range:[0,40],  color:'#fee2e2' },
+        { range:[40,70], color:'#fef3c7' },
+        { range:[70,100],color:'#dcfce7' },
+      ],
+      threshold: { line:{color:'#0c2340',width:3}, thickness:.75, value: score }
+    },
+    number: { font:{size:36, color:'#0c2340'} }
+  }], {
+    margin:{t:10,b:10,l:30,r:30}, paper_bgcolor:'white', height:210
+  }, { displayModeBar:false, responsive:true });
+
+  // Stacked bar
+  const labels = Object.values(res).map(v => v.nombre);
+  const contribs = Object.values(res).map(v => +v.contrib.toFixed(2));
+  const colors   = Object.values(res).map(v => v.color === 'verde' ? '#22c55e' : v.color === 'amarillo' ? '#f59e0b' : '#ef4444');
+  Plotly.react('bar-chart', [{
+    type:'bar', orientation:'h',
+    x: contribs, y: labels,
+    marker: { color: colors },
+    text: contribs.map(v => v.toFixed(1)),
+    textposition: 'outside',
+    hovertemplate: '%{y}: %{x:.1f} pts<extra></extra>'
+  }], {
+    margin:{t:5,b:20,l:130,r:50},
+    paper_bgcolor:'white', plot_bgcolor:'white',
+    xaxis:{ range:[0, Math.max(...contribs)*1.35], showgrid:true, gridcolor:'#f1f5f9' },
+    yaxis:{ automargin:true, tickfont:{size:11} },
+    height:210
+  }, { displayModeBar:false, responsive:true });
+
+  // Recommendation
+  const recBanner = document.getElementById('rec-banner');
+  recBanner.className = 'rec-banner ';
+  let icon, decision, text;
+  if (gate) {
+    recBanner.className += 'rojo';
+    icon = '⛔'; decision = 'RECHAZAR';
+    text = 'La operación incumple una métrica de exclusión (gating). Independientemente del score total, la política de riesgo impide la aprobación. Requiere reestructuración financiera previa o garantías adicionales extraordinarias.';
+  } else if (score >= 70) {
+    recBanner.className += 'verde';
+    icon = '✅'; decision = 'OPERAR';
+    text = `Score ${score}/100 — Perfil de riesgo sólido. Se recomienda avanzar con la operación bajo condiciones estándar. Establecer covenants de seguimiento trimestral. Posible pricing competitivo por encima de DSCR ${r.dscr.toFixed(2)}x.`;
+  } else if (score >= 40) {
+    recBanner.className += 'amarillo';
+    icon = '⚠️'; decision = 'ANALIZAR MÁS';
+    text = `Score ${score}/100 — Perfil de riesgo moderado con alertas. Ampliar due diligence financiera y operativa. Exigir covenants reforzados, colateral adicional y posiblemente amortización acelerada. Pricing ajustado al riesgo identificado.`;
+  } else {
+    recBanner.className += 'rojo';
+    icon = '❌'; decision = 'RECHAZAR';
+    text = `Score ${score}/100 — Perfil de riesgo elevado. Los ratios de cobertura y/o apalancamiento no alcanzan umbrales mínimos de mercado. Rechazar en las condiciones actuales. Posible revisión si el cliente presenta plan de mejora creíble con sponsor financiero.`;
+  }
+  setText('rec-icon', icon);
+  setText('rec-decision', decision);
+  setText('rec-text', text);
+
+  // Ratio tiles
+  const fmtMap = {
+    dscr:          { fmt: v => v.toFixed(2)+'x', label:'DSCR' },
+    deuda_ebitda:  { fmt: v => v < 0 ? 'Caja neta' : v.toFixed(2)+'x', label:'DFN / EBITDA' },
+    llcr:          { fmt: v => v.toFixed(2)+'x', label:'LLCR' },
+    ebitda_margin: { fmt: v => v.toFixed(1)+'%', label:'Margen EBITDA' },
+    ltv:           { fmt: v => v === null ? 'N/A' : v.toFixed(1)+'%', label:'LTV Colateral' },
+    ffo_dfn:       { fmt: v => v.toFixed(1)+'%', label:'FFO / DFN' },
+    dias_cobro:    { fmt: v => Math.round(v)+' días', label:'Días Cobro' },
+    equipo:        { fmt: v => v+' / 5', label:'Equipo' },
+    concentracion: { fmt: v => v+' / 5', label:'Diversif. Clientes' },
+    antiguedad:    { fmt: v => v+' / 5', label:'Antigüedad' },
+    ciclicidad:    { fmt: v => v+' / 5', label:'Estabilidad' },
+  };
+  const subMap = {
+    dscr:'cobertura deuda', deuda_ebitda:'apalancamiento', llcr:'loan life coverage',
+    ebitda_margin:'sobre ventas', ltv:'loan-to-value', ffo_dfn:'sobre DFN',
+    dias_cobro:'DSO cobro', equipo:'cualitativo', concentracion:'cualitativo',
+    antiguedad:'cualitativo', ciclicidad:'cualitativo',
+  };
+  let tilesHtml = '';
+  for (const [key, m] of Object.entries(fmtMap)) {
+    const rv = res[key];
+    const gBadge = rv.gating ? '<span class="gating-badge">GATE</span>' : '';
+    const valStr = fmtMap[key].fmt(rv.valor);
+    tilesHtml += `
+      <div class="ratio-tile ${rv.color}">
+        <div class="rt-label">${m.label}${gBadge}</div>
+        <div class="rt-value">${valStr}</div>
+        <div class="rt-sub">${subMap[key]}</div>
+        <span class="rt-score">${rv.puntuacion} pts × ${rv.peso}%</span>
+      </div>`;
+  }
+  document.getElementById('ratio-grid').innerHTML = tilesHtml;
+
+  // Radar
+  const names = Object.values(res).map(v => v.nombre);
+  const scores = Object.values(res).map(v => v.puntuacion);
+  Plotly.react('radar-chart', [{
+    type:'scatterpolar', mode:'lines+markers',
+    r: [...scores, scores[0]], theta: [...names, names[0]],
+    fill:'toself', fillcolor:'rgba(29,78,216,0.12)',
+    line:{ color:'#1d4ed8', width:2 },
+    marker:{ color:'#1d4ed8', size:6 }
+  }], {
+    polar:{ radialaxis:{range:[0,100],tickfont:{size:9}}, bgcolor:'white' },
+    paper_bgcolor:'white', margin:{t:20,b:20,l:50,r:50}, height:300
+  }, { displayModeBar:false, responsive:true });
+
+  // Top 3 risks
+  const sorted = Object.entries(res)
+    .map(([k,v]) => ({ ...v, key:k, perdida: v.peso - v.contrib }))
+    .sort((a,b) => b.perdida - a.perdida)
+    .slice(0, 3);
+
+  const riskHtml = sorted.map((f, i) => {
+    const valStr = fmtMap[f.key] ? fmtMap[f.key].fmt(f.valor) : f.valor;
+    return `
+      <div class="risk-card">
+        <div class="r-rank">#${i+1} Factor de Riesgo</div>
+        <div class="r-name">${f.nombre}${f.gating ? ' <span class="gating-badge">GATE</span>' : ''}</div>
+        <div class="r-value">Valor: ${valStr} — Score: ${f.puntuacion}/100</div>
+        <div class="r-impact">Impacto: −${f.perdida.toFixed(1)} pts de contribución potencial</div>
+      </div>`;
+  }).join('');
+  document.getElementById('risk-grid').innerHTML = riskHtml;
+}
+
+// ── NUEVA DEUDA TAB ──
+function renderNuevaDeuda(d, r, nd) {
+  const ndC = document.getElementById('nd-content');
+  const ndCap = document.getElementById('nd-capacity');
+  const ndLtv = document.getElementById('nd-ltv');
+
+  if (!nd) {
+    ndC.innerHTML = '<p style="color:#94a3b8;font-size:.85rem;">Introduzca importe, plazo y tipo de interés en el panel lateral para ver el análisis.</p>';
+    ndCap.innerHTML = '';
+    ndLtv.innerHTML = '';
+    return;
+  }
+
+  const statusClass = nd.fits ? 'nd-ok' : nd.combDSCR >= 1.0 ? 'nd-warn' : 'nd-bad';
+  const statusText  = nd.fits ? '✓ VIABLE (DSCR ≥ 1.25x)' : nd.combDSCR >= 1.0 ? '⚠ AJUSTADO (1.0x–1.25x)' : '✗ NO VIABLE (DSCR < 1.0x)';
+
+  ndC.innerHTML = `
+    <div class="nd-row"><span class="nd-lbl">Servicio deuda nueva / año</span><span class="nd-val">${nd.newDS.toFixed(2)} M€</span></div>
+    <div class="nd-row"><span class="nd-lbl">CFADS disponible</span><span class="nd-val">${r.cfads.toFixed(2)} M€</span></div>
+    <div class="nd-row"><span class="nd-lbl">Servicio deuda existente</span><span class="nd-val">${r.debt_svc.toFixed(2)} M€</span></div>
+    <div class="nd-row"><span class="nd-lbl">DSCR combinado (nueva + existente)</span><span class="nd-val">${nd.combDSCR.toFixed(2)}x</span></div>
+    <div class="nd-row"><span class="nd-lbl">Resultado</span><span class="nd-val"><span class="nd-status ${statusClass}">${statusText}</span></span></div>`;
+
+  ndCap.innerHTML = `
+    <div class="nd-row"><span class="nd-lbl">Importe máx. financiable (DSCR = 1.25x)</span><span class="nd-val">${nd.maxNew > 0 ? nd.maxNew.toFixed(2)+' M€' : 'Capacidad agotada'}</span></div>
+    <div class="nd-row"><span class="nd-lbl">Importe solicitado</span><span class="nd-val">${r.importe.toFixed(2)} M€</span></div>
+    <div class="nd-row"><span class="nd-lbl">Margen de seguridad</span><span class="nd-val">${nd.maxNew > 0 ? (nd.maxNew - r.importe).toFixed(2)+' M€' : '—'}</span></div>
+    <div class="nd-row"><span class="nd-lbl">Tipo interés aplicado</span><span class="nd-val">${r.tipo_int}%</span></div>
+    <div class="nd-row"><span class="nd-lbl">Plazo</span><span class="nd-val">${r.plazo} años</span></div>`;
+
+  // LTV
+  if (r.ltv !== null) {
+    const ltvMax = {inmueble:60, maquinaria:40, cuentas_cobrar:70, ninguno:null}[d.tipo_col];
+    const ltvStatus = ltvMax ? (r.ltv <= ltvMax ? 'nd-ok' : 'nd-bad') : 'nd-warn';
+    const ltvTxt    = ltvMax ? (r.ltv <= ltvMax ? `✓ Dentro del límite (max ${ltvMax}%)` : `✗ Supera límite ${ltvMax}% para ${d.tipo_col}`) : 'Sin límite definido';
+    ndLtv.innerHTML = `
+      <div class="nd-row"><span class="nd-lbl">Tipo de colateral</span><span class="nd-val">${d.tipo_col}</span></div>
+      <div class="nd-row"><span class="nd-lbl">Valor colateral</span><span class="nd-val">${r.colateral.toFixed(2)} M€</span></div>
+      <div class="nd-row"><span class="nd-lbl">Importe solicitado</span><span class="nd-val">${r.importe.toFixed(2)} M€</span></div>
+      <div class="nd-row"><span class="nd-lbl">LTV calculado</span><span class="nd-val">${r.ltv.toFixed(1)}%</span></div>
+      <div class="nd-row"><span class="nd-lbl">Resultado LTV</span><span class="nd-val"><span class="nd-status ${ltvStatus}">${ltvTxt}</span></span></div>`;
+  } else {
+    ndLtv.innerHTML = '<p style="color:#94a3b8;font-size:.85rem;">Introduzca importe y valor del colateral para ver el análisis LTV.</p>';
+  }
+}
+
+// ── COMPARABLES TAB ──
+function renderComparables(d, r) {
+  const sect = SECT[d.sector_comp] || SECT['metalurgia'];
+  setText('sect-name', sect.n);
+
+  const metrics = [
+    { key:'em',  label:'Margen EBITDA (%)', val: r.ebitda_margin, fmt: v => v.toFixed(1)+'%', higher:'better' },
+    { key:'dn',  label:'DFN / EBITDA (x)',  val: r.deuda_ebitda < 0 ? 0 : r.deuda_ebitda, fmt: v => v.toFixed(2)+'x', higher:'worse' },
+    { key:'ds',  label:'DSCR (x)',           val: r.dscr, fmt: v => v.toFixed(2)+'x', higher:'better' },
+    { key:'dc',  label:'Días Cobro',         val: r.dias_cobro, fmt: v => Math.round(v)+' d', higher:'worse' },
+  ];
+
+  let rows = '';
+  metrics.forEach(m => {
+    const s = sect[m.key];
+    const v = m.val;
+    // Position
+    let pos, posCls;
+    if (m.higher === 'better') {
+      if (v >= s.p75)      { pos='Top 25%'; posCls='pos-good'; }
+      else if (v >= s.med) { pos='25–50%';  posCls='pos-mid';  }
+      else if (v >= s.p25) { pos='50–75%';  posCls='pos-mid';  }
+      else                 { pos='Bottom 25%'; posCls='pos-bad'; }
+    } else {
+      if (v <= s.p25)      { pos='Top 25%'; posCls='pos-good'; }
+      else if (v <= s.med) { pos='25–50%';  posCls='pos-mid';  }
+      else if (v <= s.p75) { pos='50–75%';  posCls='pos-mid';  }
+      else                 { pos='Bottom 25%'; posCls='pos-bad'; }
+    }
+    rows += `<tr class="company-row">
+      <td>${m.label}</td>
+      <td>${m.fmt(s.p25)}</td>
+      <td>${m.fmt(s.med)}</td>
+      <td>${m.fmt(s.p75)}</td>
+      <td style="font-weight:800;">${m.fmt(v)}</td>
+      <td class="${posCls}">${pos}</td>
+    </tr>`;
+  });
+  document.getElementById('sect-tbody').innerHTML = rows;
+
+  // Waterfall chart comparing metrics
+  const categories = metrics.map(m => m.label);
+  const companyVals = metrics.map(m => m.val);
+  const medVals     = metrics.map(m => sect[m.key].med);
+
+  Plotly.react('sect-chart', [
+    {
+      type:'bar', name:'Esta empresa',
+      x: categories, y: companyVals,
+      marker:{ color:'#1d4ed8' },
+      text: companyVals.map((v,i) => metrics[i].fmt(v)),
+      textposition:'outside'
+    },
+    {
+      type:'bar', name:'Mediana sector',
+      x: categories, y: medVals,
+      marker:{ color:'#94a3b8' },
+      text: medVals.map((v,i) => metrics[i].fmt(v)),
+      textposition:'outside'
+    }
+  ], {
+    barmode:'group',
+    paper_bgcolor:'white', plot_bgcolor:'white',
+    legend:{ orientation:'h', y:1.15 },
+    margin:{ t:30,b:40,l:40,r:20 },
+    height:280,
+    yaxis:{ showgrid:true, gridcolor:'#f1f5f9' }
+  }, { displayModeBar:false, responsive:true });
+}
+
+// ── COVENANTS TAB ──
+function renderCovenants(r, res, score) {
+  // Covenant values
+  const dnCov   = Math.min(+(r.deuda_ebitda < 0 ? 2.0 : r.deuda_ebitda * 1.35 + 0.5).toFixed(2), 5.0);
+  const dscrCov = Math.max(+(r.dscr * 0.82).toFixed(2), 1.10);
+  const capexCov = +((r.ebitda * 0.25)).toFixed(1);
+
+  const covCards = [
+    { name:'DFN / EBITDA máximo', value: `≤ ${dnCov}x`, desc:'Límite de apalancamiento con headroom vs. ratio actual. Revisión semestral.' },
+    { name:'DSCR mínimo', value: `≥ ${dscrCov}x`, desc:'Cobertura de deuda mínima con colchón del 18%. Cálculo sobre los últimos 12 meses.' },
+    { name:'Capex máximo anual', value: `≤ ${capexCov} M€`, desc:'Cap equivalente al 25% del EBITDA. Excepciones previa aprobación del banco.' },
+    { name:'Restricción dividendos', value: score >= 70 ? 'Max 40% NOPAT' : 'Suspensión total', desc: score >= 70 ? 'Distribución permitida si score > 70 y DFN/EBITDA < techo.' : 'Sin distribuciones mientras score < 70 o covenant en breach.' },
+  ];
+
+  document.getElementById('cov-grid').innerHTML = covCards.map(c => `
+    <div class="cov-card">
+      <div class="cov-name">${c.name}</div>
+      <div class="cov-value">${c.value}</div>
+      <div class="cov-desc">${c.desc}</div>
+    </div>`).join('');
+
+  // Pricing
+  const tranches = [
+    { label:'Tramo Senior A', spread: score >= 80 ? '175–275 bps' : score >= 70 ? '275–375 bps' : score >= 55 ? '375–500 bps' : 'N/A (no viable)', active: score >= 55 },
+    { label:'Tramo Senior B', spread: score >= 70 ? '375–500 bps' : score >= 55 ? '500–650 bps' : 'N/A', active: score >= 55 },
+    { label:'Tramo Subordinado', spread: score >= 70 ? '600–900 bps' : 'N/A (score insuficiente)', active: score >= 70 },
+    { label:'Euribor base', spread: 'Euribor 3M/6M vigente', active: true },
+  ];
+
+  document.getElementById('pricing-grid').innerHTML = tranches.map(t => `
+    <div class="pricing-card ${t.active ? 'active-price' : ''}">
+      <div class="pc-tranche">${t.label}</div>
+      <div class="pc-spread">${t.spread}</div>
+      <div class="pc-note">${t.active ? 'Aplicable' : 'No aplicable'}</div>
+    </div>`).join('');
+
+  document.getElementById('pricing-note').textContent =
+    `Pricing basado en score ${score}/100. Spreads orientativos sobre Euribor. Ajustar según rating interno final, colateral y estructura de la operación.`;
+
+  // Extra conditions
+  const extras = [];
+  if (r.dscr < 1.5) extras.push('Amortización acelerada: al menos 15% anual del principal pendiente.');
+  if (r.deuda_ebitda > 3.0) extras.push('Obligación de desinversión de activos no estratégicos si DFN/EBITDA > techo en 2 semestres consecutivos.');
+  if (r.dias_cobro > 90) extras.push('Plan de mejora de capital circulante con revisión trimestral de factoring o confirming.');
+  if (res.equipo.puntuacion < 50) extras.push('Nombramiento de CFO independiente o Chief Restructuring Officer como condición previa al desembolso.');
+  if (extras.length === 0) extras.push('Sin condiciones adicionales fuera de los covenants estándar. Operación calificada en línea con política de riesgo.');
+  extras.push('Reporting financiero trimestral con certificación de cumplimiento de covenants.');
+  extras.push('Seguro de crédito sobre la cartera de clientes recomendado si concentración top-3 > 50%.');
+
+  document.getElementById('cov-extra').innerHTML = extras.map(e =>
+    `<div style="display:flex;gap:.7rem;align-items:flex-start;padding:.55rem 0;border-bottom:1px solid #f1f5f9;">
+      <span style="color:#1d4ed8;font-weight:800;flex-shrink:0;">→</span>
+      <span style="font-size:.85rem;color:#374151;line-height:1.5;">${e}</span>
+    </div>`).join('');
+}
+
+// ── DETALLE TAB ──
+function renderDetalle(res, score) {
+  const fmtValMap = {
+    dscr:          v => v.toFixed(2)+'x',
+    deuda_ebitda:  v => v < 0 ? 'Caja neta' : v.toFixed(2)+'x',
+    llcr:          v => v.toFixed(2)+'x',
+    ebitda_margin: v => v.toFixed(1)+'%',
+    ltv:           v => v === null ? 'N/A' : v.toFixed(1)+'%',
+    ffo_dfn:       v => v.toFixed(1)+'%',
+    dias_cobro:    v => Math.round(v)+' días',
+    equipo:        v => v+' / 5',
+    concentracion: v => v+' / 5',
+    antiguedad:    v => v+' / 5',
+    ciclicidad:    v => v+' / 5',
+  };
+
+  let rows = '';
+  for (const [key, rv] of Object.entries(res)) {
+    const valStr = fmtValMap[key] ? fmtValMap[key](rv.valor) : rv.valor;
+    const badge  = rv.color === 'verde' ? `<span class="badge-v">VERDE</span>` :
+                   rv.color === 'amarillo' ? `<span class="badge-a">AMARILLO</span>` :
+                   `<span class="badge-r">ROJO</span>`;
+    const gateBadge = rv.gating ? `<span class="badge-g">GATE</span> ` : '';
+    rows += `<tr>
+      <td>${gateBadge}${rv.nombre}</td>
+      <td>${valStr}</td>
+      <td><div style="display:flex;align-items:center;gap:.5rem;">
+        <div style="flex:1;background:#f1f5f9;border-radius:10px;height:6px;">
+          <div style="width:${rv.puntuacion}%;background:${rv.color==='verde'?'#22c55e':rv.color==='amarillo'?'#f59e0b':'#ef4444'};height:6px;border-radius:10px;"></div>
+        </div>
+        <span style="font-weight:700;font-size:.85rem;">${rv.puntuacion}</span>
+      </div></td>
+      <td>${rv.peso}%</td>
+      <td style="font-weight:700;">${rv.contrib.toFixed(2)}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }
+  document.getElementById('det-tbody').innerHTML = rows;
+
+  const finalScore = Math.round(score);
+  const finalColor = finalScore >= 70 ? '#22c55e' : finalScore >= 40 ? '#f59e0b' : '#ef4444';
+  setText('det-total', `<span style="font-size:1.1rem;color:${finalColor};">${finalScore} / 100</span>`);
+  const semC = finalScore >= 70 ? 'badge-v' : finalScore >= 40 ? 'badge-a' : 'badge-r';
+  const semT = finalScore >= 70 ? 'VERDE' : finalScore >= 40 ? 'AMARILLO' : 'ROJO';
+  document.getElementById('det-semaforo').innerHTML = `<span class="${semC}">${semT}</span>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXAMPLES
+// ═══════════════════════════════════════════════════════════════
+const EXAMPLES = {
+  tubacex: {
+    ventas:767.5, ebitda:107, gastos_fin:14.5, imp_pagado:5, capex_mant:20,
+    deuda_bruta:420, caja:165, activo_corriente:480, pasivo_corriente:378,
+    clientes:76, proveedores:473, vida_media:4,
+    importe:0, plazo:5, tipo_int:6, colateral:0, tipo_col:'inmueble',
+    equipo:'4', concentracion:'3', antiguedad:'5', ciclicidad:'2',
+    sector_comp:'metalurgia'
+  },
+  aa: {
+    ventas:200, ebitda:46, gastos_fin:3, imp_pagado:5, capex_mant:3,
+    deuda_bruta:40, caja:22, activo_corriente:90, pasivo_corriente:45,
+    clientes:35, proveedores:30, vida_media:6,
+    importe:0, plazo:5, tipo_int:5, colateral:0, tipo_col:'inmueble',
+    equipo:'5', concentracion:'4', antiguedad:'5', ciclicidad:'4',
+    sector_comp:'quimica'
+  },
+  c: {
+    ventas:80, ebitda:5, gastos_fin:6, imp_pagado:0.5, capex_mant:1.5,
+    deuda_bruta:65, caja:4, activo_corriente:35, pasivo_corriente:38,
+    clientes:30, proveedores:20, vida_media:3,
+    importe:0, plazo:5, tipo_int:9, colateral:0, tipo_col:'maquinaria',
+    equipo:'2', concentracion:'2', antiguedad:'2', ciclicidad:'2',
+    sector_comp:'construccion'
+  }
 };
 
 function loadExample(name) {
-  const d = EJEMPLOS[name];
-  const ids = ['empresa','sector','ventas','ebit','amort','gastos_fin','imp_pagado',
-    'activo_corr','pasivo_corr','clientes','proveedores','aprovision',
-    'deuda_fin_bruta','efectivo','deuda_bancaria','vida_media',
-    'equipo','concentracion','antiguedad','ciclicidad'];
-  ids.forEach(id => {
-    const el = document.getElementById(id);
-    if (el && d[id] !== undefined) el.value = d[id];
+  const ex = EXAMPLES[name];
+  if (!ex) return;
+  const fields = ['ventas','ebitda','gastos_fin','imp_pagado','capex_mant',
+    'deuda_bruta','caja','activo_corriente','pasivo_corriente','clientes',
+    'proveedores','vida_media','importe','plazo','tipo_int','colateral'];
+  fields.forEach(f => {
+    const el = document.getElementById(f);
+    if (el) el.value = ex[f];
+  });
+  ['tipo_col','equipo','concentracion','antiguedad','ciclicidad','sector_comp'].forEach(f => {
+    const el = document.getElementById(f);
+    if (el) el.value = ex[f];
   });
   update();
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   LEER INPUTS
-══════════════════════════════════════════════════════════════════ */
-function getInputs() {
-  const n = id => parseFloat(document.getElementById(id)?.value) || 0;
-  const s = id => document.getElementById(id)?.value || '';
-  return {
-    empresa: s('empresa'), sector: s('sector'),
-    ventas: n('ventas'), ebit: n('ebit'), amort: n('amort'),
-    gastos_fin: n('gastos_fin'), imp_pagado: n('imp_pagado'),
-    activo_corr: n('activo_corr'), pasivo_corr: n('pasivo_corr'),
-    clientes: n('clientes'), proveedores: n('proveedores'), aprovision: n('aprovision'),
-    deuda_fin_bruta: n('deuda_fin_bruta'), efectivo: n('efectivo'),
-    deuda_bancaria: n('deuda_bancaria'), vida_media: n('vida_media'),
-    equipo: n('equipo'), concentracion: n('concentracion'),
-    antiguedad: n('antiguedad'), ciclicidad: n('ciclicidad'),
-  };
+function resetForm() {
+  ['ventas','ebitda','gastos_fin','imp_pagado','capex_mant',
+   'deuda_bruta','caja','activo_corriente','pasivo_corriente',
+   'clientes','proveedores'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('vida_media').value = 5;
+  document.getElementById('importe').value = 0;
+  document.getElementById('plazo').value = 5;
+  document.getElementById('tipo_int').value = 6;
+  document.getElementById('colateral').value = 0;
+  document.getElementById('tipo_col').value = 'inmueble';
+  document.getElementById('equipo').value = 3;
+  document.getElementById('concentracion').value = 3;
+  document.getElementById('antiguedad').value = 3;
+  document.getElementById('ciclicidad').value = 3;
+  document.getElementById('sector_comp').value = 'metalurgia';
+  // Clear charts
+  ['gauge-chart','bar-chart','radar-chart','sect-chart'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) Plotly.purge(id);
+  });
+  document.getElementById('ratio-grid').innerHTML = '';
+  document.getElementById('risk-grid').innerHTML = '';
+  document.getElementById('gating-banner').classList.remove('visible');
+  document.getElementById('nd-content').innerHTML = '<p style="color:#94a3b8;font-size:.85rem;">Introduzca datos para ver el análisis.</p>';
+  document.getElementById('nd-capacity').innerHTML = '';
+  document.getElementById('nd-ltv').innerHTML = '';
+  document.getElementById('sect-tbody').innerHTML = '';
+  document.getElementById('cov-grid').innerHTML = '';
+  document.getElementById('pricing-grid').innerHTML = '';
+  document.getElementById('cov-extra').innerHTML = '';
+  document.getElementById('det-tbody').innerHTML = '';
 }
 
-/* ══════════════════════════════════════════════════════════════════
-   RENDER FUNCTIONS
-══════════════════════════════════════════════════════════════════ */
-function renderHeader(d, sem) {
-  document.getElementById('header').innerHTML = `
-    <div class="hdr">
-      <h1>Scoring de Riesgo Crediticio</h1>
-      <p>${d.empresa || 'Mi PYME Industrial'}${d.sector ? ' &nbsp;·&nbsp; ' + d.sector : ''}
-         &nbsp;·&nbsp; ${new Date().toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'})}</p>
-    </div>`;
+// ═══════════════════════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════════════════════
+const TAB_IDS = ['scoring','nueva_deuda','comparables','covenants','detalle'];
+
+function switchTab(name) {
+  TAB_IDS.forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('active', t === name);
+  });
+  document.querySelectorAll('.tab').forEach((el, i) => {
+    el.className = 'tab ' + (TAB_IDS[i] === name ? 'active' : 'inactive');
+  });
 }
 
-function renderGauge(total, sem, empresa) {
-  const data = [{
-    type: 'indicator', mode: 'gauge+number',
-    value: total,
-    number: { suffix: ' pts', font: { size: 58, color: '#0f172a', family: 'Arial' } },
-    gauge: {
-      axis: { range: [0,100], tickvals:[0,20,40,60,70,80,100],
-              tickwidth:2, tickcolor:'#cbd5e0', tickfont:{size:12,color:'#64748b'} },
-      bar:  { color: sem.color, thickness: 0.25 },
-      bgcolor: 'white', borderwidth: 0,
-      steps: [
-        { range:[0,40],  color:'#fef2f2' },
-        { range:[40,70], color:'#fefce8' },
-        { range:[70,100],color:'#f0fdf4' },
-      ],
-      threshold: { line:{color:sem.color,width:5}, value:total, thickness:0.8 }
-    },
-    title: { text: `<b style="font-size:1em">${empresa||'Mi PYME'}</b><br>` +
-                   `<span style="font-size:.72em;color:#94a3b8">0 = Alto Riesgo &nbsp;|&nbsp; 100 = Bajo Riesgo</span>`,
-             font: { size: 14 } },
-  }];
-  const layout = {
-    height: 320, margin: { t:90, b:8, l:35, r:35 },
-    paper_bgcolor: 'white', font: { family:'Arial' }
-  };
-  Plotly.newPlot('gauge', data, layout, { responsive:true, displayModeBar:false });
+// ═══════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════
+function setText(id, html) {
+  const el = document.getElementById(id);
+  if (el) el.innerHTML = html;
 }
 
-function renderKPIs(total, sem) {
-  const recColor = sem.cls==='op'?'#059669':sem.cls==='an'?'#d97706':'#dc2626';
-  document.getElementById('kpi-col').innerHTML = `
-    <div class="card">
-      <div class="card-lbl">Puntuacion total</div>
-      <div class="card-val">${total.toFixed(1)}<span style="font-size:.95rem;color:#94a3b8">/100</span></div>
-      <div class="card-sub">Promedio ponderado de 10 metricas</div>
-    </div>
-    <div class="card">
-      <div class="card-lbl">Semaforo de riesgo</div>
-      <div class="card-val" style="font-size:1.25rem;margin:.2rem 0">
-        <span class="${sem.badge}">${sem.txt} &mdash; ${sem.lbl}</span>
-      </div>
-      <div class="card-sub">Verde &gt;70 &nbsp;·&nbsp; Amarillo 40–70 &nbsp;·&nbsp; Rojo &lt;40</div>
-    </div>
-    <div class="card">
-      <div class="card-lbl">Recomendacion</div>
-      <div class="card-val" style="font-size:1.4rem;color:${recColor}">${sem.rec}</div>
-      <div class="card-sub">${sem.desc.slice(0,90)}...</div>
-    </div>`;
-}
-
-function renderRatioCards(r, res, d) {
-  const rc = (lbl, val, fmt, unit, key, extra='') => {
-    const pts = res[key] ? res[key].puntuacion : null;
-    const nv  = pts !== null ? nivel(pts) : null;
-    const badge = nv ? `<span class="badge" style="background:${nv.color}">${nv.lbl}</span>
-      <span style="font-size:.68rem;color:#94a3b8;margin-left:.3rem">${pts} pts</span>` : '';
-    return `<div class="ratio-card">
-      <div class="ratio-lbl">${lbl}</div>
-      <div class="ratio-val">${fmt(val)}${unit}</div>
-      <div class="ratio-pts">${badge}${extra}</div>
-    </div>`;
-  };
-  const f1 = v => v.toFixed(1);
-  const f2 = v => v.toFixed(2);
-  const f0 = v => Math.round(v);
-  document.getElementById('ratio-cards').innerHTML = `
-    <div class="row-4" style="margin-bottom:.7rem">
-      ${rc('Margen EBITDA',     r.ebitda_margin, f1, '%',  'ebitda_margin')}
-      ${rc('DFN / EBITDA',      r.deuda_ebitda,  f2, 'x',  'deuda_ebitda')}
-      ${rc('DSCR',              r.dscr,          f2, 'x',  'dscr')}
-      ${rc('Ratio de Liquidez', r.liquidez,      f2, 'x',  'liquidez')}
-    </div>
-    <div class="row-4">
-      ${rc('Dias de Cobro',    r.dias_cobro, f0, ' d', 'dias_cobro')}
-      ${rc('Dias de Pago',     r.dias_pago,  f0, ' d', 'dias_pago')}
-      ${rc('EBITDA (M€)',      r.ebitda,     f1, '',   'ebitda_margin',
-           `<span style="font-size:.68rem;color:#94a3b8">${((r.ebitda/Math.max(d.ventas,.001))*100).toFixed(1)}% margen</span>`)}
-      ${rc('DFN (M€)',         r.dfn,        f1, '',   'deuda_ebitda',
-           `<span style="font-size:.68rem;color:#94a3b8">${r.dfn.toFixed(2)}x EBITDA</span>`)}
-    </div>`;
-}
-
-function renderBar(res) {
-  const keys   = Object.keys(res);
-  const names  = keys.map(k => res[k].nombre);
-  const got    = keys.map(k => res[k].aportacion);
-  const gap    = keys.map(k => res[k].perdida);
-  const colors = keys.map(k => nivel(res[k].puntuacion).color);
-
-  const data = [
-    { type:'bar', orientation:'h', y:names, x:got,
-      name:'Puntos obtenidos', marker:{color:colors, line:{width:0}},
-      text:got.map(v=>`  ${v.toFixed(1)}`), textposition:'inside',
-      insidetextfont:{color:'white',size:12,family:'Arial'} },
-    { type:'bar', orientation:'h', y:names, x:gap,
-      name:'Potencial no aprovechado', marker:{color:'#e2e8f0', line:{width:0}},
-      text:gap.map(v=>`  -${v.toFixed(1)}`), textposition:'inside',
-      insidetextfont:{color:'#94a3b8',size:11} },
-  ];
-  const layout = {
-    barmode:'stack', height:370, margin:{t:15,b:40,l:8,r:8},
-    paper_bgcolor:'white', plot_bgcolor:'white',
-    font:{family:'Arial',size:12},
-    legend:{orientation:'h',y:1.04,x:.5,xanchor:'center',font:{size:11}},
-    xaxis:{showgrid:true,gridcolor:'#f1f5f9',title:{text:'Puntos sobre score total',font:{size:11}}},
-    yaxis:{autorange:'reversed'},
-  };
-  Plotly.newPlot('bar-chart', data, layout, {responsive:true,displayModeBar:false});
-}
-
-function renderRadar(res, sem) {
-  const cats = Object.values(res).map(r => r.nombre);
-  const vals = Object.values(res).map(r => r.puntuacion);
-  const cc   = [...cats, cats[0]];
-  const vv   = [...vals, vals[0]];
-
-  const data = [
-    { type:'scatterpolar', r:Array(cats.length+1).fill(60), theta:cc,
-      mode:'lines', line:{color:'#cbd5e0',dash:'dot',width:1.5}, name:'Umbral (60 pts)' },
-    { type:'scatterpolar', r:vv, theta:cc, fill:'toself', fillcolor:sem.fill,
-      line:{color:sem.color,width:2.5}, name:'Perfil actual',
-      mode:'lines+markers', marker:{size:6,color:sem.color} },
-  ];
-  const layout = {
-    polar:{ radialaxis:{visible:true,range:[0,100],tickvals:[0,25,50,75,100],
-              tickfont:{size:10},gridcolor:'#e2e8f0'},
-            angularaxis:{tickfont:{size:10,family:'Arial'},gridcolor:'#e2e8f0'},
-            bgcolor:'white' },
-    showlegend:true,
-    legend:{orientation:'h',y:-0.18,xanchor:'center',x:.5,font:{size:11}},
-    height:370, margin:{t:20,b:70,l:20,r:20},
-    paper_bgcolor:'white', font:{family:'Arial'},
-  };
-  Plotly.newPlot('radar-chart', data, layout, {responsive:true,displayModeBar:false});
-}
-
-function renderRiskCards(res) {
-  const top3 = Object.values(res).sort((a,b) => b.perdida - a.perdida).slice(0,3);
-  document.getElementById('risk-cards').innerHTML = top3.map((r,i) => {
-    const nv = nivel(r.puntuacion);
-    return `<div class="rfc ${nv.cls}">
-      <div class="rfc-top">
-        <div class="rfc-name">${r.nombre}</div>
-        <div class="rfc-rank">#${i+1}</div>
-      </div>
-      <div class="rfc-det">
-        Puntuacion: <b style="color:#0f172a">${r.puntuacion}/100</b>
-        &nbsp;·&nbsp; Peso: <b>${r.peso}%</b>
-      </div>
-      <div class="rfc-det">Impacto: <b style="color:#dc2626">-${r.perdida.toFixed(1)} pts</b></div>
-      <span class="badge" style="background:${nv.color}">${nv.lbl}</span>
-    </div>`;
-  }).join('');
-}
-
-function renderRec(sem) {
-  document.getElementById('rec-banner').innerHTML =
-    `<div class="rec ${sem.cls}"><h2>${sem.rec}</h2><p>${sem.desc}</p></div>`;
-}
-
-function renderDetailTable(ratioVals, res, d) {
-  const labelMap = {
-    ebitda_margin: `${ratioVals.ebitda_margin.toFixed(1)}%`,
-    deuda_ebitda:  `${ratioVals.deuda_ebitda.toFixed(2)}x`,
-    dscr:          `${ratioVals.dscr.toFixed(2)}x`,
-    liquidez:      `${ratioVals.liquidez.toFixed(2)}x`,
-    dias_cobro:    `${Math.round(ratioVals.dias_cobro)} d`,
-    dias_pago:     `${Math.round(ratioVals.dias_pago)} d`,
-    equipo:        `${d.equipo}/5`,
-    concentracion: `${d.concentracion}/5`,
-    antiguedad:    `${d.antiguedad}/5`,
-    ciclicidad:    `${d.ciclicidad}/5`,
-  };
-  const total = Object.values(res).reduce((s,r)=>s+r.aportacion,0);
-  const rows  = Object.entries(res).map(([k,r]) => {
-    const nv = nivel(r.puntuacion);
-    return `<tr>
-      <td>${r.nombre}</td>
-      <td style="text-align:center">${r.peso}%</td>
-      <td style="text-align:center">${labelMap[k]}</td>
-      <td style="text-align:center"><b>${r.puntuacion}</b></td>
-      <td style="text-align:center">${r.aportacion.toFixed(1)}</td>
-      <td><span class="badge" style="background:${nv.color};font-size:.65rem">${nv.lbl}</span></td>
-    </tr>`;
-  }).join('');
-  document.getElementById('detail-table').innerHTML = `
-    <table class="det-table">
-      <thead><tr>
-        <th>Metrica</th><th style="text-align:center">Peso</th>
-        <th style="text-align:center">Valor</th><th style="text-align:center">Pts</th>
-        <th style="text-align:center">Aport.</th><th>Nivel</th>
-      </tr></thead>
-      <tbody>${rows}
-        <tr class="det-total">
-          <td colspan="4"><b>TOTAL PONDERADO</b></td>
-          <td style="text-align:center"><b>${total.toFixed(1)}</b></td>
-          <td></td>
-        </tr>
-      </tbody>
-    </table>`;
-}
-
-/* ══════════════════════════════════════════════════════════════════
-   FUNCION PRINCIPAL DE ACTUALIZACION
-══════════════════════════════════════════════════════════════════ */
-function update() {
-  const d   = getInputs();
-  const r   = calcRatios(d);
-  const { res, total } = calcScoring(r);
-  const sem = semInfo(total);
-
-  renderHeader(d, sem);
-  renderGauge(total, sem, d.empresa);
-  renderKPIs(total, sem);
-  renderRatioCards(r, res, d);
-  renderBar(res);
-  renderRadar(res, sem);
-  renderRiskCards(res);
-  renderRec(sem);
-  renderDetailTable(r, res, d);
-}
-
-/* ── Arranque ── */
-document.getElementById('sb-date').textContent =
-  new Date().toLocaleDateString('es-ES', { day:'2-digit', month:'2-digit', year:'numeric' });
-update();
+// ── Init ──
+window.addEventListener('load', () => {
+  // Load Tubacex as default example
+  loadExample('tubacex');
+});
 </script>
 </body>
 </html>
