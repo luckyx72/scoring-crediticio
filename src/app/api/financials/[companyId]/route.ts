@@ -29,7 +29,30 @@ export async function POST(
 
         const body = await request.json();
 
-        // UPSERT based on unique compound constraint [companyId, year] handles updates cleanly
+        const financials = {
+            ventas: Number(body.ventas || 0),
+            ebitda: Number(body.ebitda || 0),
+            gastosFinancieros: Number(body.gastosFinancieros || 0),
+            impPagado: Number(body.impPagado || 0),
+            capexMant: Number(body.capexMant || 0),
+            deudaBruta: Number(body.deudaBruta || 0),
+            caja: Number(body.caja || 0),
+            activoCorriente: Number(body.activoCorriente || 0),
+            pasivoCorriente: Number(body.pasivoCorriente || 0),
+            clientes: Number(body.clientes || 0),
+            proveedores: Number(body.proveedores || 0),
+            vidaMedia: Number(body.vidaMedia || 0),
+            importe: Number(body.importe || 0),
+            plazo: Number(body.plazo || 0),
+            tipoInt: Number(body.tipoInt || 0),
+            colateral: Number(body.colateral || 0),
+            tipoCol: String(body.tipoCol || 'ninguno'),
+            equipo: Number(body.equipo || 3),
+            concentracion: Number(body.concentracion || 3),
+            antiguedad: Number(body.antiguedad || 3),
+            ciclicidad: Number(body.ciclicidad || 3)
+        };
+
         const data = await prisma.financialData.upsert({
             where: {
                 companyId_year: {
@@ -37,35 +60,11 @@ export async function POST(
                     year: Number(body.year)
                 }
             },
-            update: {
-                ventas: Number(body.ventas),
-                cogs: Number(body.cogs),
-                gastosOperativos: Number(body.gastosOperativos),
-                amortizaciones: Number(body.amortizaciones),
-                gastosFinancieros: body.gastosFinancieros ? Number(body.gastosFinancieros) : null,
-                caja: Number(body.caja),
-                deudaCortoPlazo: Number(body.deudaCortoPlazo),
-                deudaLargoPlazo: Number(body.deudaLargoPlazo),
-                cuentasCobrar: Number(body.cuentasCobrar),
-                cuentasPagar: Number(body.cuentasPagar),
-                inventario: body.inventario ? Number(body.inventario) : null,
-                cotizacion: body.cotizacion ? Number(body.cotizacion) : null,
-            },
+            update: financials,
             create: {
                 companyId,
                 year: Number(body.year),
-                ventas: Number(body.ventas),
-                cogs: Number(body.cogs),
-                gastosOperativos: Number(body.gastosOperativos),
-                amortizaciones: Number(body.amortizaciones),
-                gastosFinancieros: body.gastosFinancieros ? Number(body.gastosFinancieros) : null,
-                caja: Number(body.caja),
-                deudaCortoPlazo: Number(body.deudaCortoPlazo),
-                deudaLargoPlazo: Number(body.deudaLargoPlazo),
-                cuentasCobrar: Number(body.cuentasCobrar),
-                cuentasPagar: Number(body.cuentasPagar),
-                inventario: body.inventario ? Number(body.inventario) : null,
-                cotizacion: body.cotizacion ? Number(body.cotizacion) : null,
+                ...financials
             }
         });
 

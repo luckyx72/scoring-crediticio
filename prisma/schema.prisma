@@ -17,28 +17,41 @@ model Company {
 }
 
 model FinancialData {
-  id              String   @id @default(uuid())
-  companyId       String
-  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  year            Int
+  id                String   @id @default(uuid())
+  companyId         String
+  company           Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  year              Int
   
   // P&L
-  ventas             Float
-  cogs               Float
-  gastosOperativos   Float
-  amortizaciones     Float
-  gastosFinancieros  Float?
+  ventas            Float
+  ebitda            Float
+  gastosFinancieros Float
+  impPagado         Float
+  capexMant         Float
 
   // Balance
-  caja               Float
-  deudaCortoPlazo    Float
-  deudaLargoPlazo    Float
-  cuentasCobrar      Float
-  cuentasPagar       Float
-  inventario         Float?
+  deudaBruta        Float
+  caja              Float
+  activoCorriente   Float
+  pasivoCorriente   Float
+  clientes          Float
+  proveedores       Float
+  vidaMedia         Float
 
-  // Other Optional Inputs
-  cotizacion         Float?
+  // Operación Nueva
+  importe           Float
+  plazo             Float
+  tipoInt           Float
+
+  // Colateral
+  colateral         Float
+  tipoCol           String
+
+  // Cualitativos
+  equipo            Float
+  concentracion     Float
+  antiguedad        Float
+  ciclicidad        Float
 
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
