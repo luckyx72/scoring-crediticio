@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import { Database, Save, Upload, Download, Activity, PlusCircle, TerminalSquare, Layers, Plus, Trash2 } from 'lucide-react';
+import { Database, Save, Upload, Download, Activity, PlusCircle, TerminalSquare, Plus, Trash2 } from 'lucide-react';
 import { cn, InputField } from '@/components/ui';
 import { Financials, DEFAULT_FINANCIALS_TUBACEX, DEFAULT_COL_ROWS_TUBACEX, Company, ColRow, EXAMPLES } from '@/lib/types';
 import { COL_CFG } from '@/lib/scoring';
 import { DashboardContent } from '@/components/MainContent';
+import { getCompanies, saveCompany, saveFinancials, saveColRows, getFinancials, getColRows, deleteCompany } from '@/lib/storage';
+import { exportXlsx, importXlsx } from '@/lib/xlsx';
 
 export default function TokenOriginateDashboard() {
     const [activeView, setActiveView] = useState<'calculator' | 'database'>('calculator');
@@ -22,7 +24,7 @@ export default function TokenOriginateDashboard() {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        fetchCompanies();
+        setCompanies(getCompanies());
     }, []);
 
     // Update colateral value from inventory total
@@ -33,57 +35,70 @@ export default function TokenOriginateDashboard() {
         }
     }, [colRows]);
 
-    const fetchCompanies = async () => {
-        try {
-            const res = await fetch('/api/companies');
-            if (res.ok) setCompanies(await res.json());
-        } catch (e) { console.error(e); }
+    const loadFinancials = (companyId: string, companyName: string) => {
+        const f = getFinancials(companyId);
+        if (f) setData({ ...DEFAULT_FINANCIALS_TUBACEX, ...f });
+        const cr = getColRows(companyId);
+        if (cr.length > 0) setColRows(cr);
+        else setColRows([]);
+        setSelectedCompanyId(companyId);
+        setCompanyNameStr(companyName);
+        setActiveView('calculator');
     };
 
-    const loadFinancials = async (companyId: string, companyName: string) => {
-        try {
-            const res = await fetch(`/api/financials/${companyId}`);
-            if (res.ok) {
-                const d = await res.json();
-                if (d && d.length > 0) setData({ ...DEFAULT_FINANCIALS_TUBACEX, ...d[0] });
-            }
-            setSelectedCompanyId(companyId);
-            setCompanyNameStr(companyName);
-            setActiveView('calculator');
-        } catch (e) { console.error(e); }
-    };
-
-    const handleSave = async () => {
+    const handleSave = () => {
         setIsSaving(true);
         try {
             let companyId = selectedCompanyId;
             if (!companyId) {
                 const resName = prompt("Company Name:", companyNameStr);
                 if (!resName) { setIsSaving(false); return; }
-                const cRes = await fetch('/api/companies', { method: 'POST', body: JSON.stringify({ name: resName, sector: data.sector_comp || 'Industrial' }) });
-                const cData = await cRes.json();
-                companyId = cData.id;
+                const company = saveCompany(resName, data.sector_comp || 'Industrial');
+                companyId = company.id;
                 setCompanyNameStr(resName);
                 setSelectedCompanyId(companyId);
-                fetchCompanies();
             }
-            if (companyId) {
-                await fetch(`/api/financials/${companyId}`, { method: 'POST', body: JSON.stringify({ year: new Date().getFullYear(), ...data }) });
-                alert(`Model saved to database under ${companyNameStr}`);
-            }
-        } catch (e) { alert("Error saving model"); } finally { setIsSaving(false); }
+            saveFinancials(companyId, data);
+            saveColRows(companyId, colRows);
+            setCompanies(getCompanies());
+            alert(`✓ Modelo guardado: ${companyNameStr}`);
+        } catch (e) {
+            alert("Error guardando modelo");
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    const handleDelete = (id: string) => {
+        if (!confirm('¿Eliminar este registro?')) return;
+        deleteCompany(id);
+        setCompanies(getCompanies());
+        if (selectedCompanyId === id) {
+            setSelectedCompanyId(null);
+            setData(DEFAULT_FINANCIALS_TUBACEX);
+            setColRows(DEFAULT_COL_ROWS_TUBACEX);
+            setCompanyNameStr("Tubacex (Ejemplo)");
+        }
     };
 
     const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!e.target.files?.[0]) return;
-        const formData = new FormData();
-        formData.append('file', e.target.files[0]);
         try {
-            const res = await fetch('/api/import', { method: 'POST', body: formData });
-            if (res.ok) { alert("XLSX Imported Successfully"); fetchCompanies(); }
-            else alert("Upload Failed");
+            const count = await importXlsx(e.target.files[0]);
+            alert(`✓ XLSX importado: ${count} empresa(s)`);
+            setCompanies(getCompanies());
             if (fileInputRef.current) fileInputRef.current.value = "";
-        } catch (err) { alert("Upload Error"); }
+        } catch (err) {
+            alert("Error de importación");
+        }
+    };
+
+    const handleExport = () => {
+        try {
+            exportXlsx();
+        } catch (err) {
+            alert("Error exportando");
+        }
     };
 
     const handleInput = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, key: keyof Financials) => {
@@ -250,8 +265,8 @@ export default function TokenOriginateDashboard() {
                             <button onClick={() => fileInputRef.current?.click()} className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-[#111] hover:bg-[#222] border border-[#222] text-[#aaa] text-[10px] uppercase font-bold tracking-widest transition-all">
                                 <Upload className="w-3.5 h-3.5" /> IMP_XLS
                             </button>
-                            <button onClick={() => window.location.href = '/api/export'} className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-[#111] hover:bg-[#222] border border-[#222] text-[#aaa] text-[10px] uppercase font-bold tracking-widest transition-all">
-                                <Download className="w-3.5 h-3.5" /> EXP_DB
+                            <button onClick={handleExport} className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-[#111] hover:bg-[#222] border border-[#222] text-[#aaa] text-[10px] uppercase font-bold tracking-widest transition-all">
+                                <Download className="w-3.5 h-3.5" /> EXP_XLS
                             </button>
                         </div>
                     </div>
@@ -286,7 +301,7 @@ export default function TokenOriginateDashboard() {
                                         <Download className="w-3.5 h-3.5" /> PDF_EXPORT
                                     </button>
                                     <button onClick={handleSave} disabled={isSaving} className="flex items-center gap-2 px-4 py-2 text-[10px] font-bold tracking-widest border border-emerald-900 bg-emerald-950/30 text-emerald-500 hover:bg-emerald-900/50 hover:text-emerald-400 transition-colors uppercase">
-                                        <Save className="w-3.5 h-3.5" /> {isSaving ? 'COMMITTING...' : 'COMMIT_DB'}
+                                        <Save className="w-3.5 h-3.5" /> {isSaving ? 'SAVING...' : 'SAVE_LOCAL'}
                                     </button>
                                 </div>
                             </div>
@@ -314,8 +329,8 @@ export default function TokenOriginateDashboard() {
                         <div className="animate-in fade-in duration-300">
                             <div className="flex items-start justify-between mb-6 pb-4 border-b border-[#1a1a1a]">
                                 <div>
-                                    <h1 className="text-xl font-bold tracking-tight text-white mb-1 uppercase">DATABASE_RECORDS</h1>
-                                    <p className="text-xs text-[#666] uppercase tracking-wider">Storage: SQLite_Local</p>
+                                    <h1 className="text-xl font-bold tracking-tight text-white mb-1 uppercase">LOCAL_STORAGE_RECORDS</h1>
+                                    <p className="text-xs text-[#666] uppercase tracking-wider">Storage: Browser localStorage</p>
                                 </div>
                             </div>
                             <div className="bg-[#0a0a0a] border border-[#222] p-0 overflow-x-auto">
@@ -326,7 +341,7 @@ export default function TokenOriginateDashboard() {
                                             <th className="p-4">ENTITY_NAME</th>
                                             <th className="p-4">SECTOR</th>
                                             <th className="p-4">DATE</th>
-                                            <th className="p-4 text-right">ACTION</th>
+                                            <th className="p-4 text-right">ACTIONS</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-[#1a1a1a]">
@@ -336,12 +351,13 @@ export default function TokenOriginateDashboard() {
                                                 <td className="p-4 text-[#ccc] font-bold">{c.name}</td>
                                                 <td className="p-4 text-[#555]">{c.sector || 'N/A'}</td>
                                                 <td className="p-4 font-mono">{new Date(c.createdAt).toLocaleDateString()}</td>
-                                                <td className="p-4 text-right">
+                                                <td className="p-4 text-right flex gap-2 justify-end">
                                                     <button onClick={() => loadFinancials(c.id, c.name)} className="text-amber-500 hover:text-amber-400 font-bold tracking-wider text-[10px] uppercase px-3 py-1 border border-amber-500/30 rounded-sm hover:bg-amber-500/10 transition-colors">Load</button>
+                                                    <button onClick={() => handleDelete(c.id)} className="text-rose-500/50 hover:text-rose-400 font-bold tracking-wider text-[10px] uppercase px-3 py-1 border border-rose-500/20 rounded-sm hover:bg-rose-500/10 transition-colors">Del</button>
                                                 </td>
                                             </tr>
                                         ))}
-                                        {companies.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-[#555] uppercase tracking-widest text-[10px]">NO_RECORDS_FOUND</td></tr>}
+                                        {companies.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-[#555] uppercase tracking-widest text-[10px]">NO_RECORDS_FOUND — Save a model to see it here</td></tr>}
                                     </tbody>
                                 </table>
                             </div>

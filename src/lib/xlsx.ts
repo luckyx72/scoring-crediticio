@@ -1,131 +1,117 @@
+/**
+ * Client-side XLSX import/export using SheetJS.
+ * No server-side dependencies — works in static builds.
+ */
 import * as XLSX from 'xlsx';
-import { prisma } from './prisma';
-import type { Company, FinancialData } from '@prisma/client';
+import { Financials, ColRow, Company } from './types';
+import { exportAll, importAll, saveCompany, saveFinancials, saveColRows } from './storage';
 
-export async function exportToXlsx() {
-    const companies = await prisma.company.findMany({
-        include: { financialData: true },
-    });
+/**
+ * Export all localStorage data as an XLSX file download.
+ */
+export function exportXlsx(): void {
+    const snapshot = exportAll();
+    const wb = XLSX.utils.book_new();
 
-    const workbook = XLSX.utils.book_new();
-
-    const companiesData = companies.map((c: Company) => ({
-        id: c.id,
-        name: c.name,
-        sector: c.sector || '',
-        createdAt: c.createdAt.toISOString(),
+    // Companies sheet
+    const compData = snapshot.companies.map(c => ({
+        id: c.id, name: c.name, sector: c.sector || '', createdAt: c.createdAt,
     }));
-    const companiesSheet = XLSX.utils.json_to_sheet(companiesData);
-    XLSX.utils.book_append_sheet(workbook, companiesSheet, "Companies");
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(compData), 'Companies');
 
-    const financialData = companies.flatMap((c: Company & { financialData: FinancialData[] }) => c.financialData.map((f: FinancialData) => ({
-        id: f.id,
-        companyId: f.companyId,
-        companyName: c.name,
-        year: f.year,
-        ventas: f.ventas,
-        ebitda: f.ebitda,
-        gastosFinancieros: f.gastosFinancieros,
-        impPagado: f.impPagado,
-        capexMant: f.capexMant,
-        deudaBruta: f.deudaBruta,
-        caja: f.caja,
-        activoCorriente: f.activoCorriente,
-        pasivoCorriente: f.pasivoCorriente,
-        clientes: f.clientes,
-        proveedores: f.proveedores,
-        vidaMedia: f.vidaMedia,
-        importe: f.importe,
-        plazo: f.plazo,
-        tipoInt: f.tipoInt,
-        colateral: f.colateral,
-        tipoCol: f.tipoCol,
-        equipo: f.equipo,
-        concentracion: f.concentracion,
-        antiguedad: f.antiguedad,
-        ciclicidad: f.ciclicidad,
-    })));
-    const financialsSheet = XLSX.utils.json_to_sheet(financialData);
-    XLSX.utils.book_append_sheet(workbook, financialsSheet, "FinancialData");
+    // Financials sheet (one row per company)
+    const finRows: any[] = [];
+    for (const c of snapshot.companies) {
+        const f = snapshot.financials[c.id];
+        if (f) finRows.push({ companyId: c.id, companyName: c.name, ...f });
+    }
+    if (finRows.length > 0) {
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(finRows), 'FinancialData');
+    }
 
-    return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    // ColRows sheet
+    const colData: any[] = [];
+    for (const c of snapshot.companies) {
+        const rows = snapshot.colRows[c.id];
+        if (rows) {
+            for (const r of rows) colData.push({ companyId: c.id, companyName: c.name, ...r });
+        }
+    }
+    if (colData.length > 0) {
+        XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(colData), 'Collateral');
+    }
+
+    // Trigger download
+    XLSX.writeFile(wb, `TokenOriginate_Export_${new Date().toISOString().slice(0, 10)}.xlsx`);
 }
 
-export async function importFromXlsx(buffer: Buffer) {
-    const workbook = XLSX.read(buffer, { type: 'buffer' });
+/**
+ * Import XLSX file into localStorage.
+ * Returns the number of companies imported.
+ */
+export async function importXlsx(file: File): Promise<number> {
+    const buffer = await file.arrayBuffer();
+    const wb = XLSX.read(buffer, { type: 'array' });
+    let count = 0;
 
-    if (workbook.SheetNames.includes('Companies')) {
-        const companiesSheet = workbook.Sheets['Companies'];
-        const companies = XLSX.utils.sheet_to_json<Record<string, string | number | null>>(companiesSheet);
-        for (const c of companies) {
-            if (c.id) {
-                await prisma.company.upsert({
-                    where: { id: String(c.id) },
-                    update: {
-                        name: String(c.name),
-                        sector: c.sector ? String(c.sector) : null,
-                    },
-                    create: {
-                        id: String(c.id),
-                        name: String(c.name),
-                        sector: c.sector ? String(c.sector) : null,
-                    }
-                });
-            } else {
-                await prisma.company.create({
-                    data: {
-                        name: String(c.name),
-                        sector: c.sector ? String(c.sector) : null,
-                    }
-                });
-            }
+    // Import companies
+    if (wb.SheetNames.includes('Companies')) {
+        const rows = XLSX.utils.sheet_to_json<Record<string, any>>(wb.Sheets['Companies']);
+        for (const row of rows) {
+            saveCompany(String(row.name || 'Unknown'), String(row.sector || ''));
+            count++;
         }
     }
 
-    if (workbook.SheetNames.includes('FinancialData')) {
-        const financialsSheet = workbook.Sheets['FinancialData'];
-        const financials = XLSX.utils.sheet_to_json<Record<string, string | number | null>>(financialsSheet);
-        for (const f of financials) {
-            const data = {
-                companyId: String(f.companyId),
-                year: Number(f.year),
-                ventas: Number(f.ventas || 0),
-                ebitda: Number(f.ebitda || 0),
-                gastosFinancieros: Number(f.gastosFinancieros || 0),
-                impPagado: Number(f.impPagado || 0),
-                capexMant: Number(f.capexMant || 0),
-                deudaBruta: Number(f.deudaBruta || 0),
-                caja: Number(f.caja || 0),
-                activoCorriente: Number(f.activoCorriente || 0),
-                pasivoCorriente: Number(f.pasivoCorriente || 0),
-                clientes: Number(f.clientes || 0),
-                proveedores: Number(f.proveedores || 0),
-                vidaMedia: Number(f.vidaMedia || 0),
-                importe: Number(f.importe || 0),
-                plazo: Number(f.plazo || 0),
-                tipoInt: Number(f.tipoInt || 0),
-                colateral: Number(f.colateral || 0),
-                tipoCol: String(f.tipoCol || 'ninguno'),
-                equipo: Number(f.equipo || 3),
-                concentracion: Number(f.concentracion || 3),
-                antiguedad: Number(f.antiguedad || 3),
-                ciclicidad: Number(f.ciclicidad || 3)
+    // Import financials
+    if (wb.SheetNames.includes('FinancialData')) {
+        const rows = XLSX.utils.sheet_to_json<Record<string, any>>(wb.Sheets['FinancialData']);
+        for (const row of rows) {
+            const cId = String(row.companyId || '');
+            if (!cId) continue;
+            const f: Financials = {
+                ventas: Number(row.ventas || 0),
+                ebitda: Number(row.ebitda || 0),
+                gastosFinancieros: Number(row.gastosFinancieros || 0),
+                impPagado: Number(row.impPagado || 0),
+                capexMant: Number(row.capexMant || 0),
+                deudaBruta: Number(row.deudaBruta || 0),
+                caja: Number(row.caja || 0),
+                activoCorriente: Number(row.activoCorriente || 0),
+                pasivoCorriente: Number(row.pasivoCorriente || 0),
+                clientes: Number(row.clientes || 0),
+                proveedores: Number(row.proveedores || 0),
+                vidaMedia: Number(row.vidaMedia || 5),
+                importe: Number(row.importe || 0),
+                plazo: Number(row.plazo || 5),
+                tipoInt: Number(row.tipoInt || 6),
+                colateral: Number(row.colateral || 0),
+                tipoCol: String(row.tipoCol || 'ninguno'),
+                equipo: Number(row.equipo || 3),
+                concentracion: Number(row.concentracion || 3),
+                antiguedad: Number(row.antiguedad || 3),
+                ciclicidad: Number(row.ciclicidad || 3),
+                sector_comp: String(row.sector_comp || 'metalurgia'),
             };
-
-            if (f.id) {
-                await prisma.financialData.upsert({
-                    where: { id: String(f.id) },
-                    update: data,
-                    create: {
-                        id: String(f.id),
-                        ...data
-                    }
-                });
-            } else {
-                await prisma.financialData.create({
-                    data
-                });
-            }
+            saveFinancials(cId, f);
         }
     }
+
+    // Import collateral rows
+    if (wb.SheetNames.includes('Collateral')) {
+        const rows = XLSX.utils.sheet_to_json<Record<string, any>>(wb.Sheets['Collateral']);
+        // Group by companyId
+        const grouped: Record<string, ColRow[]> = {};
+        for (const row of rows) {
+            const cId = String(row.companyId || '');
+            if (!cId) continue;
+            if (!grouped[cId]) grouped[cId] = [];
+            grouped[cId].push({ tipo: String(row.tipo || 'otros'), desc: String(row.desc || ''), bruto: Number(row.bruto || 0) });
+        }
+        for (const [cId, colRows] of Object.entries(grouped)) {
+            saveColRows(cId, colRows);
+        }
+    }
+
+    return count;
 }
