@@ -1,3 +1,5 @@
+import { Financials } from './types';
+
 export const PESOS = {
     dscr: { peso: 25.0, nombre: 'DSCR', gating: true },
     deuda_ebitda: { peso: 20.0, nombre: 'DFN / EBITDA', gating: true },
@@ -22,7 +24,10 @@ function linScore(v: number, pts: number[][]) {
     return 0;
 }
 
-export const LTV_MAX: Record<string, number | null> = { inmueble: 60, maquinaria: 40, cuentas_cobrar: 70, stock: 50, mixto: 55, ninguno: null };
+export const LTV_MAX: Record<string, number | null> = {
+    inmueble: 60, maquinaria: 40, cuentas_cobrar: 70,
+    stock: 50, mixto: 55, ninguno: null
+};
 
 export const SCORE_FNS: Record<string, (v: any) => number> = {
     dscr: v => linScore(v, [[0, 0], [1.0, 19], [1.2, 49], [1.5, 80], [2.5, 100]]),
@@ -32,10 +37,10 @@ export const SCORE_FNS: Record<string, (v: any) => number> = {
     ltv: v => v === null ? 55 : linScore(v, [[0, 100], [50, 80], [60, 50], [70, 20], [100, 0]]),
     ffo_dfn: v => linScore(v, [[0, 10], [15, 40], [20, 80], [35, 100]]),
     dias_cobro: v => linScore(v, [[0, 100], [45, 80], [90, 40], [180, 0]]),
-    equipo: v => ({ 1: 0, 2: 25, 3: 50, 4: 75, 5: 100 }[Math.round(v)] || 0),
-    concentracion: v => ({ 1: 0, 2: 25, 3: 50, 4: 75, 5: 100 }[Math.round(v)] || 0),
-    antiguedad: v => ({ 1: 0, 2: 25, 3: 50, 4: 75, 5: 100 }[Math.round(v)] || 0),
-    ciclicidad: v => ({ 1: 0, 2: 25, 3: 50, 4: 75, 5: 100 }[Math.round(v)] || 0),
+    equipo: v => ({ 1: 0, 2: 25, 3: 50, 4: 75, 5: 100 } as any)[Math.round(v)] || 0,
+    concentracion: v => ({ 1: 0, 2: 25, 3: 50, 4: 75, 5: 100 } as any)[Math.round(v)] || 0,
+    antiguedad: v => ({ 1: 0, 2: 25, 3: 50, 4: 75, 5: 100 } as any)[Math.round(v)] || 0,
+    ciclicidad: v => ({ 1: 0, 2: 25, 3: 50, 4: 75, 5: 100 } as any)[Math.round(v)] || 0,
 };
 
 export const SECT: Record<string, any> = {
@@ -49,49 +54,76 @@ export const SECT: Record<string, any> = {
     logistica: { n: 'Logística / Transporte', em: { p25: 6, med: 10, p75: 15 }, dn: { p25: 1.5, med: 2.7, p75: 4.2 }, ds: { p25: 1.0, med: 1.4, p75: 1.9 }, dc: { p25: 30, med: 50, p75: 70 } },
 };
 
-export function calcRatios(d: any) {
+// Collateral config for haircuts analysis
+export const COL_CFG: Record<string, { label: string; haircut: number; execMid: number; execLabel: string }> = {
+    inmueble: { label: 'Inmueble comercial', haircut: 0.40, execMid: 3.0, execLabel: '24–48 meses' },
+    nave: { label: 'Nave industrial', haircut: 0.40, execMid: 3.0, execLabel: '24–48 meses' },
+    maquinaria: { label: 'Maquinaria', haircut: 0.60, execMid: 0.75, execLabel: '6–12 meses' },
+    stock: { label: 'Stock / Inventario', haircut: 0.50, execMid: 0.167, execLabel: '1–3 meses' },
+    cuentas_cobrar: { label: 'Cuentas a cobrar', haircut: 0.30, execMid: 0.375, execLabel: '3–6 meses' },
+    otros: { label: 'Otros', haircut: 0.50, execMid: 0.75, execLabel: '6–12 meses' },
+};
+
+/**
+ * calcRatios — accepts Financials (camelCase) directly.
+ * Maps camelCase fields to the snake_case names used internally.
+ */
+export function calcRatios(d: Financials) {
     const ebitda = d.ebitda;
     const ventas = Math.max(d.ventas, 0.001);
-    const dfn = d.deuda_bruta - d.caja;
+    const dfn = d.deudaBruta - d.caja;
     const ebitda_margin = ebitda / ventas * 100;
     const deuda_ebitda = ebitda > 0 ? dfn / ebitda : (dfn <= 0 ? -1 : 99);
     const dias_cobro = d.clientes / ventas * 365;
     const dias_pago = d.proveedores / ventas * 365;
-    const liquidez = d.pasivo_corriente > 0 ? d.activo_corriente / d.pasivo_corriente : 99;
+    const liquidez = d.pasivoCorriente > 0 ? d.activoCorriente / d.pasivoCorriente : 99;
 
-    const cfads = ebitda - d.imp_pagado - (d.capex_mant || 0);
+    const cfads = ebitda - d.impPagado - (d.capexMant || 0);
 
-    const vida_media = Math.max(d.vida_media || 5, 0.5);
+    const vida_media = Math.max(d.vidaMedia || 5, 0.5);
     const amort = Math.max(dfn, 0) / vida_media;
-    const debt_svc = d.gastos_fin + amort;
+    const debt_svc = d.gastosFinancieros + amort;
     const dscr = debt_svc > 0 ? cfads / debt_svc : (cfads > 0 ? 99 : 0);
 
     const loanBase = d.importe > 0 ? d.importe : Math.max(dfn, 0.001);
-    const rate = Math.max((d.tipo_int || 6) / 100, 0.0001);
+    const rate = Math.max((d.tipoInt || 6) / 100, 0.0001);
     const n_loan = d.importe > 0 ? Math.max(d.plazo || 5, 1) : Math.max(vida_media, 1);
     const pvFactor = (1 - Math.pow(1 + rate, -n_loan)) / rate;
     const llcr = loanBase > 0 ? (cfads * pvFactor) / loanBase : 99;
 
-    let ltv = null;
+    let ltv: number | null = null;
     if (d.colateral > 0) {
         ltv = (loanBase / d.colateral) * 100;
     }
 
-    const ffo = ebitda - d.gastos_fin - d.imp_pagado;
+    const ffo = ebitda - d.gastosFinancieros - d.impPagado;
     const ffo_dfn = dfn > 0 ? (ffo / dfn * 100) : (ffo > 0 ? 100 : 10);
 
     return {
         ebitda, ventas, dfn, ebitda_margin, deuda_ebitda,
         dias_cobro, dias_pago, liquidez, cfads, debt_svc,
         dscr, llcr, ltv, ffo, ffo_dfn, amort, vida_media, loanBase, n_loan, rate,
-        tipo_col: d.tipo_col, colateral: d.colateral,
-        importe: d.importe, plazo: d.plazo, tipo_int: d.tipo_int,
-        gastos_fin: d.gastos_fin
+        tipoCol: d.tipoCol, colateral: d.colateral,
+        importe: d.importe, plazo: d.plazo, tipoInt: d.tipoInt,
+        gastosFinancieros: d.gastosFinancieros,
+        // Pass qualitative through for scoring
+        equipo: d.equipo, concentracion: d.concentracion,
+        antiguedad: d.antiguedad, ciclicidad: d.ciclicidad,
     };
 }
 
-export function calcScores(r: any) {
-    const res: any = {};
+export interface ScoreResult {
+    valor: any;
+    puntuacion: number;
+    peso: number;
+    contrib: number;
+    color: string;
+    nombre: string;
+    gating: boolean;
+}
+
+export function calcScores(r: any): Record<string, ScoreResult> {
+    const res: Record<string, ScoreResult> = {};
     for (const [key, cfg] of Object.entries(PESOS)) {
         const val = r[key] !== undefined ? r[key] : null;
         const sc = SCORE_FNS[key](val);
@@ -105,11 +137,11 @@ export function calcScores(r: any) {
     return res;
 }
 
-export function totalScore(res: any) {
-    return Object.values(res).reduce((s: any, v: any) => s + v.contrib, 0);
+export function totalScore(res: Record<string, ScoreResult>): number {
+    return Object.values(res).reduce((s, v) => s + v.contrib, 0);
 }
 
-export function checkGating(res: any) {
+export function checkGating(res: Record<string, ScoreResult>): string | null {
     const dscrFails = res.dscr.puntuacion < 20;
     const dfnFails = res.deuda_ebitda.puntuacion < 40;
     if (dscrFails && dfnFails) return 'DSCR < 1.0x y DFN/EBITDA > 4.0x simultáneamente: doble incumplimiento de métricas de exclusión. Operación rechazada automáticamente independientemente del score total.';
@@ -117,3 +149,71 @@ export function checkGating(res: any) {
     if (dfnFails) return 'DFN/EBITDA > 4.0x: nivel de apalancamiento fuera del umbral de mercado para deuda senior. Operación rechazada automáticamente.';
     return null;
 }
+
+// Build specific improvement text for "ANALIZAR MÁS" recommendation
+export function buildImprovementText(r: any, res: Record<string, ScoreResult>): string {
+    const checks = [
+        {
+            key: 'dscr', val: r.dscr, label: 'DSCR',
+            thresholds: [{ v: 1.0, lbl: '1.0x (naranja)' }, { v: 1.2, lbl: '1.2x (amarillo)' }, { v: 1.5, lbl: '1.5x (verde)' }],
+            fmt: (v: number) => v.toFixed(2) + 'x', dir: 'higher'
+        },
+        {
+            key: 'llcr', val: r.llcr, label: 'LLCR',
+            thresholds: [{ v: 1.2, lbl: '1.2x (amarillo)' }, { v: 1.4, lbl: '1.4x (verde)' }],
+            fmt: (v: number) => v.toFixed(2) + 'x', dir: 'higher'
+        },
+        {
+            key: 'deuda_ebitda', val: r.deuda_ebitda < 0 ? 0 : r.deuda_ebitda, label: 'DFN/EBITDA',
+            thresholds: [{ v: 4.0, lbl: '4.0x' }, { v: 2.5, lbl: '2.5x (verde)' }],
+            fmt: (v: number) => v.toFixed(2) + 'x', dir: 'lower'
+        },
+        {
+            key: 'ebitda_margin', val: r.ebitda_margin, label: 'Margen EBITDA',
+            thresholds: [{ v: 8, lbl: '8%' }, { v: 15, lbl: '15% (verde)' }],
+            fmt: (v: number) => v.toFixed(1) + '%', dir: 'higher'
+        },
+        {
+            key: 'ffo_dfn', val: r.ffo_dfn, label: 'FFO/DFN',
+            thresholds: [{ v: 15, lbl: '15%' }, { v: 20, lbl: '20% (verde)' }],
+            fmt: (v: number) => v.toFixed(1) + '%', dir: 'higher'
+        },
+    ];
+
+    const improvements: string[] = [];
+    for (const c of checks) {
+        if (res[c.key].puntuacion >= 80) continue;
+        let target: any = null;
+        if (c.dir === 'higher') {
+            for (const t of c.thresholds) { if (c.val < t.v) { target = t; break; } }
+        } else {
+            for (const t of c.thresholds) { if (c.val > t.v) { target = t; break; } }
+        }
+        if (!target) continue;
+        const pct = c.dir === 'higher'
+            ? Math.abs((target.v - c.val) / Math.max(Math.abs(c.val), 0.001) * 100).toFixed(0)
+            : Math.abs((c.val - target.v) / Math.max(Math.abs(target.v), 0.001) * 100).toFixed(0);
+        const arrow = c.dir === 'higher' ? '↑' : '↓';
+        improvements.push(`${c.label} actual ${c.fmt(c.val)} → necesita ${c.dir === 'higher' ? 'subir' : 'bajar'} a ${target.lbl} (${arrow}${pct}%)`);
+        if (improvements.length >= 3) break;
+    }
+
+    return improvements.length > 0
+        ? improvements.join('. ') + '.'
+        : 'Revisar ratios de cobertura y apalancamiento.';
+}
+
+// Format map for displaying ratio values
+export const FMT_MAP: Record<string, { fmt: (v: any) => string; sub: string }> = {
+    dscr: { fmt: v => v.toFixed(2) + 'x', sub: 'cobertura deuda' },
+    deuda_ebitda: { fmt: v => v < 0 ? 'Caja neta' : v.toFixed(2) + 'x', sub: 'apalancamiento' },
+    llcr: { fmt: v => v.toFixed(2) + 'x', sub: 'loan life coverage' },
+    ebitda_margin: { fmt: v => v.toFixed(1) + '%', sub: 'sobre ventas' },
+    ltv: { fmt: v => v === null ? 'N/A' : v.toFixed(1) + '%', sub: 'loan-to-value' },
+    ffo_dfn: { fmt: v => v.toFixed(1) + '%', sub: 'sobre DFN' },
+    dias_cobro: { fmt: v => Math.round(v) + ' días', sub: 'DSO cobro' },
+    equipo: { fmt: v => v + ' / 5', sub: 'cualitativo' },
+    concentracion: { fmt: v => v + ' / 5', sub: 'cualitativo' },
+    antiguedad: { fmt: v => v + ' / 5', sub: 'cualitativo' },
+    ciclicidad: { fmt: v => v + ' / 5', sub: 'cualitativo' },
+};
